@@ -1,6 +1,8 @@
 # Mini Project API Endpoints
 Database: https://github.com/tizetasmnd/miniproject-database
 
+# Mini Project API Endpoints
+
 ## Feature 1: Event Discovery, Transaction, and Reviews
 
 ### 1. Event Discovery and Event Details
@@ -8,7 +10,7 @@ Database: https://github.com/tizetasmnd/miniproject-database
 #### (a) GET /events
 
 - **Description**: Retrieve a list of events.
-- **Query Parameters**: `category`, `location`, `search`, `date`, `price`
+- **Query Parameters**: `category`, `city`, `date`, `price`, `search`
 - **Response**: List of events with pagination and filtering.
 
     **Success Response:**
@@ -19,19 +21,25 @@ Database: https://github.com/tizetasmnd/miniproject-database
             "id": 1,
             "name": "Music Concert",
             "description": "An amazing music concert.",
-            "price": 500000,
+            "price_range": [300000, 500000],
             "date": "2024-07-01",
             "time": "19:00:00",
-            "location": "Jakarta",
-            "available_seats": 150,
-            "event_type": "Paid",
+            "location": "Stadium ABC",
+            "city": "Jakarta",
+            "availableSeats": 150,
+            "eventType": "Paid",
             "category": "Music",
-            "event_picture": "http://example.com/image.jpg"
+            "eventPicture": "http://example.com/image.jpg",
+            "organizer": {
+                "id": 1,
+                "name": "Organizer1",
+                "profilePicture": "http://example.com/image.jpg"
+            }
         }
         ],
         "pagination": {
         "page": 1,
-        "limit": 10,
+        "limit": 8,
         "totalPages": 5
         }
     }
@@ -46,7 +54,7 @@ Database: https://github.com/tizetasmnd/miniproject-database
 #### (b) GET /events/{event_id}
 
 - **Description**: Retrieve details of a specific event.
-- **Path Parameters:**: `event_id`
+- **Path Parameters**: `event_id`
 - **Response**: Event details including name, description, price, date, time, location, available seats, ticket types, and picture.
 
     **Success Response:**
@@ -55,14 +63,19 @@ Database: https://github.com/tizetasmnd/miniproject-database
             "id": 1,
             "name": "Music Concert",
             "description": "An amazing music concert.",
-            "price": 500000,
             "date": "2024-07-01",
             "time": "19:00:00",
             "location": "Jakarta",
-            "available_seats": 150,
-            "event_type": "Paid",
+            "availableSeats": 150,
+            "eventType": "Paid",
             "category": "Music",
-            "event_picture": "http://example.com/image.jpg"
+            "eventPicture": "http://example.com/image.jpg",
+            "ticketTiers": ["vip", "general"],
+            "organizer": {
+                "id": 1,
+                "name": "Organizer1",
+                "profilePicture": "http://example.com/image.jpg"
+            }
         }
     ```
 
@@ -79,11 +92,16 @@ Database: https://github.com/tizetasmnd/miniproject-database
 - **Request Body:**:
     ```json
     {
-        "event_id": 1,
-        "user_id": 2,
-        "ticket_price": 500000,
-        "discount_applied": 50000,
-        "final_price": 450000
+        "eventId": 1,
+        "userId": 2,
+        "ticketTier": {
+            "vip": 500000
+        },
+        "quantity": 2,
+        "pointsDiscount": 10000,
+        "eventVoucherDiscount": 250000,
+        "userVoucherDiscount": 100000,
+        "totalPrice": 640000,
     }
     ```
 - **Response**: Ticket purchase confirmation.
@@ -91,13 +109,18 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
         {
-            "ticket_id": 1,
-            "event_id": 1,
-            "user_id": 2,
-            "ticket_price": 500000,
-            "discount_applied": 50000,
-            "final_price": 450000,
-            "purchase_date": "2024-06-19T14:48:00Z"
+            "ticketId": 1,
+            "eventId": 1,
+            "userId": 2,
+            "ticketTier": {
+                "vip": 500000
+            },
+            "quantity": 2,
+            "pointsDiscount": 10000,
+            "eventVoucherDiscount": 250000,
+            "userVoucherDiscount": 100000,
+            "totalPrice": 640000,
+            "purchaseDate": "2024-06-19T14:48:00Z"
         }
     ```
 
@@ -115,20 +138,41 @@ Database: https://github.com/tizetasmnd/miniproject-database
 #### (a) POST /events
 
 - **Description**: Create a new event.
-- **Request Body:**:
+- **Request Body**:
     ```json
     {
-        "organizer_id": 2,
-        "name": "Music Concert",
+        "organizerId": 2,
+        "eventName": "Music Concert",
         "description": "An amazing music concert.",
-        "price": 500000,
         "date": "2024-07-01",
         "time": "19:00:00",
-        "location": "Jakarta",
-        "available_seats": 150,
-        "event_type": "Paid",
+        "location": "Stadium ABC",
+        "city": "Jakarta",
+        "eventType": "Paid",
         "category": "Music",
-        "event_picture": "http://example.com/image.jpg"
+        "ticketTiers": [
+            {"vip": {
+                "price": 500000,
+                "availableSeats": 50
+            }},
+            {"general": {
+                "price": 300000,
+                "availableSeats": 100
+            }},
+        ],
+        "vouchers": [
+            {
+                "voucherName": "ENTP25",
+                "discountAmount": 25.00,
+                "expiryDate": "2024-06-10"
+            },
+            {
+                "voucherName": "INFJ15",
+                "discountAmount": 15.00,
+                "expiryDate": "2024-06-28"
+            }
+        ],
+        "eventPicture": "http://example.com/image.jpg"
     }
     ```
 - **Response**: Created event details.
@@ -137,18 +181,39 @@ Database: https://github.com/tizetasmnd/miniproject-database
     ```json
     {
         "id": 1,
-        "organizer_id": 2,
-        "name": "Music Concert",
+        "organizerId": 2,
+        "eventName": "Music Concert",
         "description": "An amazing music concert.",
-        "price": 500000,
         "date": "2024-07-01",
         "time": "19:00:00",
-        "location": "Jakarta",
-        "available_seats": 150,
-        "event_type": "Paid",
+        "location": "Stadium ABC",
+        "city": "Jakarta",
+        "eventType": "Paid",
         "category": "Music",
-        "event_picture": "http://example.com/image.jpg",
-        "created_at": "2024-06-19T14:48:00Z"
+        "ticketTiers": [
+            {"vip": {
+                "price": 500000,
+                "availableSeats": 50
+            }},
+            {"general": {
+                "price": 300000,
+                "availableSeats": 100
+            }},
+        ],
+        "vouchers": [
+            {
+                "voucherName": "ENTP25",
+                "discountAmount": 25.00,
+                "expiryDate": "2024-06-10"
+            },
+            {
+                "voucherName": "INFJ15",
+                "discountAmount": 15.00,
+                "expiryDate": "2024-06-28"
+            }
+        ],
+        "eventPicture": "http://example.com/image.jpg",
+        "createdAt": "2024-06-19T14:48:00Z"
     }
     ```
     **Failed Response:**
@@ -164,9 +229,9 @@ Database: https://github.com/tizetasmnd/miniproject-database
 - **Request Body:**:
     ```json
     {
-        "user_id": 2,
-        "discount_percentage": 10.00,
-        "expiry_date": "2024-12-31"
+        "userId": 2,
+        "discountPercentage": 10.00,
+        "expiryDate": "2024-12-31"
     }
     ```
 - **Response**: Promotion creation confirmation.
@@ -174,11 +239,11 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "promotion_id": 1,
-        "user_id": 2,
-        "discount_percentage": 10.00,
-        "expiry_date": "2024-12-31",
-        "created_at": "2024-06-19T14:48:00Z"
+        "promotionId": 1,
+        "userId": 2,
+        "discountPercentage": 10.00,
+        "expiryDate": "2024-12-31",
+        "createdAt": "2024-06-19T14:48:00Z"
     }
     ```
     **Failed Response:**
@@ -197,10 +262,10 @@ Database: https://github.com/tizetasmnd/miniproject-database
 - **Request Body:**:
     ```json
     {
-        "event_id": 1,
-        "user_id": 2,
+        "eventId": 1,
+        "userId": 2,
         "rating": 4,
-        "review_text": "Great event!"
+        "reviewText": "Great event!"
     }
     ```
 - **Response**: Review submission confirmation.
@@ -208,12 +273,12 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "review_id": 1,
-        "event_id": 1,
-        "user_id": 2,
+        "reviewId": 1,
+        "eventId": 1,
+        "userId": 2,
         "rating": 4,
-        "review_text": "Great event!",
-        "created_at": "2024-06-19T14:48:00Z"
+        "reviewText": "Great event!",
+        "createdAt": "2024-06-19T14:48:00Z"
     }
     ```
     **Failed Response:**
@@ -233,11 +298,11 @@ Database: https://github.com/tizetasmnd/miniproject-database
 - **Request Body:**:
     ```json
     {
-        "first_name": "John",
-        "last_name": "Doe",
+        "firstName": "John",
+        "lastName": "Doe",
         "email": "john.doe@example.com",
         "password": "securepassword",
-        "referral_code": "REF12345"
+        "referralCode": "REF12345"
     }
     ```
 - **Response**: Registration confirmation and generated referral code.
@@ -245,9 +310,10 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "user_id": 1,
-        "referral_code": "REF67890",
-        "created_at": "2024-06-19T14:48:00Z"
+        "userId": 1,
+        "referralCode": "REF67890",
+        "discountVoucher": 10.00,
+        "createdAt": "2024-06-19T14:48:00Z"
     }
     ```
     **Failed Response:**
@@ -260,7 +326,7 @@ Database: https://github.com/tizetasmnd/miniproject-database
 #### (b) POST /login
 
 - **Description**: Authenticate a user.
-- **Request Body:**:
+- **Request Body**:
     ```json
     {
         "email": "john.doe@example.com",
@@ -269,7 +335,7 @@ Database: https://github.com/tizetasmnd/miniproject-database
     ```
 - **Response**: Registration confirmation and generated referral code.
 
-    **Success Response:**
+    **Success Response:** (ttl: 12 hr)
     ```json
     {
         "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -292,12 +358,13 @@ Database: https://github.com/tizetasmnd/miniproject-database
     ```json
     {
         "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
+        "displayName": "John Doe",
+        "avatar": "http://example.com/profile.jpg",
+        "quotes": "A nice quote",
+        "referralCode": "REFCODE123",
         "points": 20000,
-        "profile_picture": "http://example.com/profile.jpg",
-        "created_at": "2024-06-19T14:48:00Z"
+        "rating": 4.5, 
+        "bookedEvents": ["array of tickets"]
     }
     ```
     **Failed Response:**
@@ -312,11 +379,11 @@ Database: https://github.com/tizetasmnd/miniproject-database
 #### (a) POST /referrals
 
 - **Description**: Use a referral code for registration.
-- **Request Body:**:
+- **Request Body**:
     ```json
     {
-        "referrer_id": 1,
-        "referee_id": 2
+        "referrerId": 1,
+        "refereeId": 2
     }
     ```
 - **Response**: Referral usage confirmation and points awarded.
@@ -324,12 +391,12 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "referral_id": 1,
-        "referrer_id": 1,
-        "referee_id": 2,
-        "points_earned": 10000,
-        "points_expiry_date": "2024-09-19",
-        "created_at": "2024-06-19T14:48:00Z"
+        "referralId": 1,
+        "referrerId": 1,
+        "refereeId": 2,
+        "pointsEarned": 10000,
+        "pointsExpiryDate": "2024-09-19",
+        "createdAt": "2024-06-19T14:48:00Z"
     }
     ```
     **Failed Response:**
@@ -348,16 +415,16 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "user_id": 1,
-        "points_balance": 20000,
+        "userId": 1,
+        "pointsBalance": 20000,
         "points": [
             {
-                "points_earned": 10000,
-                "expiry_date": "2024-09-19"
+                "pointsEarned": 10000,
+                "expiryDate": "2024-09-19"
             },
             {
-                "points_earned": 10000,
-                "expiry_date": "2024-12-19"
+                "pointsEarned": 10000,
+                "expiryDate": "2024-12-19"
             }
         ]
     }
@@ -375,9 +442,9 @@ Database: https://github.com/tizetasmnd/miniproject-database
 - **Request Body:**:
     ```json
     {
-        "user_id": 1,
-        "ticket_id": 2,
-        "points_redeemed": 5000
+        "userId": 1,
+        "ticketId": 2,
+        "pointsRedeemed": 5000
     }
     ```
 - **Response**: Points redemption confirmation.
@@ -385,11 +452,11 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "redemption_id": 1,
-        "user_id": 1,
-        "ticket_id": 2,
-        "points_redeemed": 5000,
-        "created_at": "2024-06-19T14:48:00Z"
+        "redemptionId": 1,
+        "userId": 1,
+        "ticketId": 2,
+        "pointsRedeemed": 5000,
+        "createdAt": "2024-06-19T14:48:00Z"
     }
     ```
     **Failed Response:**
@@ -416,8 +483,8 @@ Database: https://github.com/tizetasmnd/miniproject-database
             "id": 1,
             "name": "Music Concert",
             "date": "2024-07-01",
-            "total_tickets_sold": 50,
-            "total_revenue": 25000000
+            "totalTicketsSold": 50,
+            "totalRevenue": 25000000
             }
         ]
     }
@@ -438,11 +505,11 @@ Database: https://github.com/tizetasmnd/miniproject-database
     **Success Response:**
     ```json
     {
-        "organizer_id": 1,
+        "organizerId": 1,
         "statistics": {
-            "total_events": 10,
-            "total_tickets_sold": 500,
-            "total_revenue": 125000000
+            "totalEvents": 10,
+            "totalTicketsSold": 500,
+            "totalRevenue": 125000000
         }
     }
     ```
@@ -464,10 +531,10 @@ Database: https://github.com/tizetasmnd/miniproject-database
     {
         "reports": [
             {
-            "event_id": 1,
+            "eventId": 1,
             "name": "Music Concert",
             "date": "2024-07-01",
-            "tickets_sold": 50,
+            "ticketsSold": 50,
             "revenue": 25000000
             }
         ]
@@ -518,7 +585,3 @@ Database: https://github.com/tizetasmnd/miniproject-database
         "error": "Failed to retrieve locations"
     }
     ```
-
-
-
-
