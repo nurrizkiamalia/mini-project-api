@@ -1,7 +1,7 @@
 # Mini Project API Endpoints
 Database: https://github.com/tizetasmnd/miniproject-database
 
-# Mini Project API Endpoints
+---
 
 ## Feature 1: Event Discovery, Transaction, and Reviews
 
@@ -568,20 +568,3 @@ Database: https://github.com/tizetasmnd/miniproject-database
     }
     ```
 
-#### (b) GET /locations
-
-- **Description**: Retrieve a list of event locations.
-- **Response**: List of locations.
-
-    **Success Response:**
-    ```json
-    {
-        "locations": ["Jakarta", "Bandung", "Surabaya", "Yogyakarta", "Bali"]
-    }
-    ```
-    **Failed Response:**
-    ```json
-    {
-        "error": "Failed to retrieve locations"
-    }
-    ```
