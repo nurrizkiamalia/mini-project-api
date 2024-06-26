@@ -8,7 +8,7 @@ Database: https://github.com/tizetasmnd/miniproject-database
 #### (a) GET /events
 
 - **Description**: Retrieve a list of events.
-- **Query Parameters**: `category`, `location`, `page`, `limit`, `search`
+- **Query Parameters**: `category`, `location`, `search`, `date`, `price`
 - **Response**: List of events with pagination and filtering.
 
     **Success Response:**
