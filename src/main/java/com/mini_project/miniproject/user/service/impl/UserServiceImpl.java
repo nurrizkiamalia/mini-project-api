@@ -1,8 +1,10 @@
 package com.mini_project.miniproject.user.service.impl;
 
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
+import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.entity.ReferralDiscount;
 import com.mini_project.miniproject.user.entity.Users;
+import com.mini_project.miniproject.user.repository.PointsRepository;
 import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
 import com.mini_project.miniproject.user.repository.UserRepository;
 import com.mini_project.miniproject.user.service.UserService;
@@ -19,11 +21,13 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final ReferralDiscountRepository referralDiscountRepository;
+    private final PointsRepository pointsRepository;
 //    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, ReferralDiscountRepository referralDiscountRepository) {
+    public UserServiceImpl(UserRepository userRepository, ReferralDiscountRepository referralDiscountRepository, PointsRepository pointsRepository) {
         this.userRepository = userRepository;
         this.referralDiscountRepository = referralDiscountRepository;
+        this.pointsRepository = pointsRepository;
 //        this.passwordEncoder = passwordEncoder;
     }
     @Override
@@ -59,9 +63,7 @@ public class UserServiceImpl implements UserService {
         // Give 10% referral discount for the registered user
         if (referralUser.isPresent()) {
             giveReferralDiscount(savedUser);
-
-            // Give 10,000 points to the referral code owner
-//            addPointsToReferralOwner(referralUser.get());
+            addPointsToReferralOwner(referralUser.get());
         }
 
         // Give 10% referral discount for the registered user
@@ -74,6 +76,14 @@ public class UserServiceImpl implements UserService {
             // set the expiry date of the points to be 3 month from now
 
         return savedUser;
+    }
+
+    private void addPointsToReferralOwner(Users referralOwner) {
+        Points points = new Points();
+        points.setUserId(referralOwner.getId());
+        points.setAmount(10000);
+        points.setExpiryDate(LocalDate.now().plusMonths(3));
+        pointsRepository.save(points);
     }
 
     private void giveReferralDiscount(Users savedUser) {
