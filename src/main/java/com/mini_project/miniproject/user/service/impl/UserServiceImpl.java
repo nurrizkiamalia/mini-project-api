@@ -1,0 +1,85 @@
+package com.mini_project.miniproject.user.service.impl;
+
+import com.mini_project.miniproject.user.dto.RegisterRequestDto;
+import com.mini_project.miniproject.user.entity.Users;
+import com.mini_project.miniproject.user.repository.UserRepository;
+import com.mini_project.miniproject.user.service.UserService;
+import jakarta.transaction.Transactional;
+//import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserServiceImpl implements UserService {
+    private final UserRepository userRepository;
+//    private final PasswordEncoder passwordEncoder;
+
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+//        this.passwordEncoder = passwordEncoder;
+    }
+    @Override
+    @Transactional
+    public Users register(RegisterRequestDto registerRequestDto) {
+        // check if email already exists
+        Optional<Users> existingUser = userRepository.findByEmail(registerRequestDto.getEmail());
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("Failed to register. Email already exists.");
+        }
+
+        // validate referral code if provided
+        if (registerRequestDto.getReferralCode() != null && !registerRequestDto.getReferralCode().isEmpty()) {
+            Optional<Users> referralUser = userRepository.findByReferralCode(registerRequestDto.getReferralCode());
+            if (!referralUser.isPresent()) {
+                throw new RuntimeException("Failed to register. Invalid referral code.");
+            }
+        }
+
+        // Store user data
+        Users newUser = new Users();
+        newUser.setFirstName(registerRequestDto.getFirstName());
+        newUser.setLastName(registerRequestDto.getLastName());
+        newUser.setEmail(registerRequestDto.getEmail());
+//        newUser.setPassword(passwordEncoder.encode(registerRequestDto.getPassword()));
+        newUser.setPassword(registerRequestDto.getPassword());
+        newUser.setReferralCode(generateReferralCode());
+
+        // save the user to the repository
+        Users savedUser = userRepository.save(newUser);
+
+        // Give 10% referral discount for the registered user
+        // giveReferralDiscount(savedUser);
+        // set the expiry date of the points to be 3 month from now
+
+        // Give 10000 points to the referral code owner
+            // get the referral_code owner based on the registered referral_code in the table users
+            // add +10000 points to that owner
+            // set the expiry date of the points to be 3 month from now
+
+
+
+
+
+        return savedUser;
+    }
+
+    private String generateReferralCode() {
+        // Define the characters allowed in the referral code
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder referralCode = new StringBuilder();
+
+        // Generate an 8-character referral code
+        for (int i = 0; i < 8; i++) {
+            int index = random.nextInt(characters.length());
+            referralCode.append(characters.charAt(index));
+        }
+
+        return referralCode.toString();
+    }
+
+
+}
