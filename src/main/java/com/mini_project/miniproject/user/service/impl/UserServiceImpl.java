@@ -1,7 +1,9 @@
 package com.mini_project.miniproject.user.service.impl;
 
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
+import com.mini_project.miniproject.user.entity.ReferralDiscount;
 import com.mini_project.miniproject.user.entity.Users;
+import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
 import com.mini_project.miniproject.user.repository.UserRepository;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.transaction.Transactional;
@@ -9,16 +11,19 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final ReferralDiscountRepository referralDiscountRepository;
 //    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, ReferralDiscountRepository referralDiscountRepository) {
         this.userRepository = userRepository;
+        this.referralDiscountRepository = referralDiscountRepository;
 //        this.passwordEncoder = passwordEncoder;
     }
     @Override
@@ -31,8 +36,9 @@ public class UserServiceImpl implements UserService {
         }
 
         // validate referral code if provided
+        Optional<Users> referralUser = Optional.empty();
         if (registerRequestDto.getReferralCode() != null && !registerRequestDto.getReferralCode().isEmpty()) {
-            Optional<Users> referralUser = userRepository.findByReferralCode(registerRequestDto.getReferralCode());
+            referralUser = userRepository.findByReferralCode(registerRequestDto.getReferralCode());
             if (!referralUser.isPresent()) {
                 throw new RuntimeException("Failed to register. Invalid referral code.");
             }
@@ -51,6 +57,14 @@ public class UserServiceImpl implements UserService {
         Users savedUser = userRepository.save(newUser);
 
         // Give 10% referral discount for the registered user
+        if (referralUser.isPresent()) {
+            giveReferralDiscount(savedUser);
+
+            // Give 10,000 points to the referral code owner
+//            addPointsToReferralOwner(referralUser.get());
+        }
+
+        // Give 10% referral discount for the registered user
         // giveReferralDiscount(savedUser);
         // set the expiry date of the points to be 3 month from now
 
@@ -59,11 +73,14 @@ public class UserServiceImpl implements UserService {
             // add +10000 points to that owner
             // set the expiry date of the points to be 3 month from now
 
-
-
-
-
         return savedUser;
+    }
+
+    private void giveReferralDiscount(Users savedUser) {
+        ReferralDiscount referralDiscount = new ReferralDiscount();
+        referralDiscount.setUserId(savedUser.getId());
+        referralDiscount.setExpiryDate(LocalDate.now().plusMonths(3));
+        referralDiscountRepository.save(referralDiscount);
     }
 
     private String generateReferralCode() {
