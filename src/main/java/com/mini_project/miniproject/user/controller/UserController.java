@@ -1,7 +1,9 @@
 package com.mini_project.miniproject.user.controller;
 
 import com.mini_project.miniproject.exceptions.ApplicationException;
+import com.mini_project.miniproject.exceptions.DataNotFoundException;
 import com.mini_project.miniproject.responses.Response;
+import com.mini_project.miniproject.user.dto.ProfileResponseDto;
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
 import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.service.UserService;
@@ -31,6 +33,14 @@ public class UserController {
         }
     }
 
-//    @GetMapping("/users/profile/{usedId}")
+    @GetMapping("/profile/{userId}")
+    public ResponseEntity<Response<Object>> getUserProfile(@PathVariable("userId") Long userId) {
+        try {
+            ProfileResponseDto profile = userService.getUserProfile(userId);
+            return Response.success("User profile retrieved successfully", profile);
+        } catch (ApplicationException e) {
+            return Response.failed(e.getHttpStatus().value(), e.getMessage());
+        }
+    }
 
 }

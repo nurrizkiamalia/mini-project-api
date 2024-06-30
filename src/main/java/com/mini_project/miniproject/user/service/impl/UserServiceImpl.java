@@ -1,6 +1,8 @@
 package com.mini_project.miniproject.user.service.impl;
 
 import com.mini_project.miniproject.exceptions.ApplicationException;
+import com.mini_project.miniproject.exceptions.DataNotFoundException;
+import com.mini_project.miniproject.user.dto.ProfileResponseDto;
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
 import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.entity.ReferralDiscount;
@@ -69,6 +71,34 @@ public class UserServiceImpl implements UserService {
         }
 
         return savedUser;
+    }
+
+    @Override
+    public ProfileResponseDto getUserProfile(Long userId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
+
+        ProfileResponseDto profileResponseDto = new ProfileResponseDto();
+        profileResponseDto.setFirstName(user.getFirstName());
+        profileResponseDto.setLastName(user.getLastName());
+        profileResponseDto.setEmail(user.getEmail());
+        profileResponseDto.setReferralCode(user.getReferralCode());
+        profileResponseDto.setAvatar(user.getAvatar());
+
+        // Calculate total points that are not expired
+        int totalPoints = calculateTotalPoints(userId);
+        profileResponseDto.setPoints(totalPoints);
+
+        return profileResponseDto;
+    }
+
+
+
+    // helpers
+
+    private int calculateTotalPoints(Long userId) {
+        List<Points> userPoints = pointsRepository.findAllByUserIdAndExpiryDateAfter(userId, LocalDate.now());
+        return userPoints.stream().mapToInt(Points::getAmount).sum();
     }
 
     private void addPointsToReferralOwner(Users referralOwner) {
