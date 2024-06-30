@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.user.service.impl;
 
+import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
 import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.entity.ReferralDiscount;
@@ -10,6 +11,7 @@ import com.mini_project.miniproject.user.repository.UserRepository;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.transaction.Transactional;
 //import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -36,7 +38,7 @@ public class UserServiceImpl implements UserService {
         // check if email already exists
         Optional<Users> existingUser = userRepository.findByEmail(registerRequestDto.getEmail());
         if (existingUser.isPresent()) {
-            throw new RuntimeException("Failed to register. Email already exists.");
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Failed to register. Email already exists.");
         }
 
         // validate referral code if provided
@@ -44,7 +46,7 @@ public class UserServiceImpl implements UserService {
         if (registerRequestDto.getReferralCode() != null && !registerRequestDto.getReferralCode().isEmpty()) {
             referralUser = userRepository.findByReferralCode(registerRequestDto.getReferralCode());
             if (!referralUser.isPresent()) {
-                throw new RuntimeException("Failed to register. Invalid referral code.");
+                throw new ApplicationException(HttpStatus.BAD_REQUEST, "Failed to register. Invalid referral code.");
             }
         }
 
@@ -65,15 +67,6 @@ public class UserServiceImpl implements UserService {
             giveReferralDiscount(savedUser);
             addPointsToReferralOwner(referralUser.get());
         }
-
-        // Give 10% referral discount for the registered user
-        // giveReferralDiscount(savedUser);
-        // set the expiry date of the points to be 3 month from now
-
-        // Give 10000 points to the referral code owner
-            // get the referral_code owner based on the registered referral_code in the table users
-            // add +10000 points to that owner
-            // set the expiry date of the points to be 3 month from now
 
         return savedUser;
     }
