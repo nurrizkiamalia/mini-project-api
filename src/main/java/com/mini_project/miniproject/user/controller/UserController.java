@@ -62,5 +62,16 @@ public class UserController {
         }
     }
 
+    @PutMapping("/settings/password/{userId}")
+    public ResponseEntity<Response<Object>> changePassword(
+            @PathVariable Long userId,
+            @Valid @RequestBody ChangePasswordDto changePasswordDto) {
+        try {
+            userService.changePassword(userId, changePasswordDto);
+            return Response.success("Password changed successfully");
+        } catch (ApplicationException e) {
+            return Response.failed(e.getHttpStatus().value(), e.getMessage());
+        }
+    }
 
 }
