@@ -3,15 +3,20 @@ package com.mini_project.miniproject.user.controller;
 import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.exceptions.DataNotFoundException;
 import com.mini_project.miniproject.responses.Response;
+import com.mini_project.miniproject.user.dto.ChangePasswordDto;
 import com.mini_project.miniproject.user.dto.ProfileResponseDto;
+import com.mini_project.miniproject.user.dto.ProfileSettingsDto;
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
 import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -42,5 +47,20 @@ public class UserController {
             return Response.failed(e.getHttpStatus().value(), e.getMessage());
         }
     }
+
+    @PutMapping(value = "/settings/profile/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Response<Object>> updateProfile(
+            @PathVariable Long userId,
+            @Valid @ModelAttribute ProfileSettingsDto profileSettingsDto) {
+        try {
+            userService.updateProfile(userId, profileSettingsDto);
+            return Response.success("Profile updated successfully");
+        } catch (ApplicationException e) {
+            return Response.failed(e.getHttpStatus().value(), e.getMessage());
+        } catch (IOException e) {
+            return Response.failed(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error processing image");
+        }
+    }
+
 
 }

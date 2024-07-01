@@ -1,8 +1,10 @@
 package com.mini_project.miniproject.user.service.impl;
 
 import com.mini_project.miniproject.exceptions.ApplicationException;
-import com.mini_project.miniproject.exceptions.DataNotFoundException;
+import com.mini_project.miniproject.helpers.CloudinaryService;
+import com.mini_project.miniproject.user.dto.ChangePasswordDto;
 import com.mini_project.miniproject.user.dto.ProfileResponseDto;
+import com.mini_project.miniproject.user.dto.ProfileSettingsDto;
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
 import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.entity.ReferralDiscount;
@@ -12,12 +14,14 @@ import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
 import com.mini_project.miniproject.user.repository.UserRepository;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.transaction.Transactional;
-//import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,12 +30,16 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final ReferralDiscountRepository referralDiscountRepository;
     private final PointsRepository pointsRepository;
-//    private final PasswordEncoder passwordEncoder;
+    private final CloudinaryService cloudinaryService;
 
-    public UserServiceImpl(UserRepository userRepository, ReferralDiscountRepository referralDiscountRepository, PointsRepository pointsRepository) {
+    public UserServiceImpl(UserRepository userRepository,
+                           ReferralDiscountRepository referralDiscountRepository,
+                           PointsRepository pointsRepository,
+                           CloudinaryService cloudinaryService) {
         this.userRepository = userRepository;
         this.referralDiscountRepository = referralDiscountRepository;
         this.pointsRepository = pointsRepository;
+        this.cloudinaryService = cloudinaryService;
 //        this.passwordEncoder = passwordEncoder;
     }
     @Override
@@ -57,7 +65,6 @@ public class UserServiceImpl implements UserService {
         newUser.setFirstName(registerRequestDto.getFirstName());
         newUser.setLastName(registerRequestDto.getLastName());
         newUser.setEmail(registerRequestDto.getEmail());
-//        newUser.setPassword(passwordEncoder.encode(registerRequestDto.getPassword()));
         newUser.setPassword(registerRequestDto.getPassword());
         newUser.setReferralCode(generateReferralCode());
 
@@ -93,8 +100,57 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    @Override
+    @Transactional
+    public void updateProfile(Long userId, ProfileSettingsDto profileSettingsDto) throws IOException {
+        // check if user exists
+        Users user = userRepository.findById(userId).
+                orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
 
-    // helpers
+
+        // proceed the avatar
+        String avatarUrl = null;
+        if (profileSettingsDto.getAvatar() != null && !profileSettingsDto.getAvatar().isEmpty()) {
+            validateImage(profileSettingsDto.getAvatar());
+            avatarUrl = cloudinaryService.uploadImage(profileSettingsDto.getAvatar());
+        }
+
+        // save updated profile
+        user.updateProfile(profileSettingsDto.getFirstName(), profileSettingsDto.getLastName(), avatarUrl);
+        userRepository.save(user);
+
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordDto changePasswordDto) {
+        Users user = userRepository.findById(userId).
+                orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // check if the inputted current password is correct
+        if (!changePasswordDto.getCurrentPassword().equals(user.getPassword())) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+
+        // save new password
+        user.setPassword(changePasswordDto.getNewPassword());
+        userRepository.save(user);
+
+    }
+
+
+
+// helpers
+    private void validateImage(MultipartFile avatar) {
+        if (avatar.getSize() > 1_000_000) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Image size must not exceed 1MB");
+        }
+
+        String contentType = avatar.getContentType();
+        if (contentType == null || !Arrays.asList("image/jpeg", "image/jpg", "image/png", "image/webp").contains(contentType)) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Invalid image format. Allowed formats: jpg, jpeg, png, webp");
+        }
+    }
 
     private int calculateTotalPoints(Long userId) {
         List<Points> userPoints = pointsRepository.findAllByUserIdAndExpiryDateAfter(userId, LocalDate.now());

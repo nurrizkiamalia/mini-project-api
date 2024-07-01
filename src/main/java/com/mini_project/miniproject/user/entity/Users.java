@@ -86,5 +86,10 @@ public class Users {
         this.deletedAt = Instant.now();
     }
 
+    public void updateProfile(String firstName, String lastName, String avatar) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.avatar = avatar;
+    }
 
 }
