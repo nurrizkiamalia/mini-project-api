@@ -9,5 +9,6 @@ public class ProfileResponseDto {
     private String email;
     private String referralCode;
     private String avatar;
+    private String quotes;
     private int points; // sum of points the user has that are not expired
 }

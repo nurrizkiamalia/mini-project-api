@@ -57,6 +57,16 @@ public class Users {
     @Column(name = "avatar", length = 100)
     private String avatar;
 
+    @Size(max = 255)
+//    @NotNull
+//    @Column(name = "quotes", nullable = false, length = 255)
+    @Column(name = "quotes")
+    private String quotes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role; // Ensure this matches the Role enum
+
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
@@ -86,9 +96,10 @@ public class Users {
         this.deletedAt = Instant.now();
     }
 
-    public void updateProfile(String firstName, String lastName, String avatar) {
+    public void updateProfile(String firstName, String lastName, String quotes, String avatar) {
         this.firstName = firstName;
         this.lastName = lastName;
+        this.quotes = quotes;
         this.avatar = avatar;
     }
 

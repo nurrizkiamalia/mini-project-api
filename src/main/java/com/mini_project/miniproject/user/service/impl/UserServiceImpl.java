@@ -8,6 +8,7 @@ import com.mini_project.miniproject.user.dto.ProfileSettingsDto;
 import com.mini_project.miniproject.user.dto.RegisterRequestDto;
 import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.entity.ReferralDiscount;
+import com.mini_project.miniproject.user.entity.Role;
 import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.repository.PointsRepository;
 import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
@@ -66,7 +67,9 @@ public class UserServiceImpl implements UserService {
         newUser.setLastName(registerRequestDto.getLastName());
         newUser.setEmail(registerRequestDto.getEmail());
         newUser.setPassword(registerRequestDto.getPassword());
+        newUser.setRole(Role.fromString(registerRequestDto.getRole()));
         newUser.setReferralCode(generateReferralCode());
+
 
         // save the user to the repository
         Users savedUser = userRepository.save(newUser);
@@ -91,6 +94,7 @@ public class UserServiceImpl implements UserService {
         profileResponseDto.setEmail(user.getEmail());
         profileResponseDto.setReferralCode(user.getReferralCode());
         profileResponseDto.setAvatar(user.getAvatar());
+        profileResponseDto.setQuotes(user.getQuotes());
 
         // Calculate total points that are not expired
         int totalPoints = calculateTotalPoints(userId);
@@ -116,7 +120,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // save updated profile
-        user.updateProfile(profileSettingsDto.getFirstName(), profileSettingsDto.getLastName(), avatarUrl);
+        user.updateProfile(profileSettingsDto.getFirstName(), profileSettingsDto.getLastName(), profileSettingsDto.getQuotes(), avatarUrl);
         userRepository.save(user);
 
     }
