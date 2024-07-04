@@ -16,6 +16,7 @@ import com.mini_project.miniproject.user.repository.UserRepository;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,15 +34,18 @@ public class UserServiceImpl implements UserService {
     private final PointsRepository pointsRepository;
     private final CloudinaryService cloudinaryService;
 
+    private final PasswordEncoder passwordEncoder;
+
     public UserServiceImpl(UserRepository userRepository,
                            ReferralDiscountRepository referralDiscountRepository,
                            PointsRepository pointsRepository,
-                           CloudinaryService cloudinaryService) {
+                           CloudinaryService cloudinaryService,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.referralDiscountRepository = referralDiscountRepository;
         this.pointsRepository = pointsRepository;
         this.cloudinaryService = cloudinaryService;
-//        this.passwordEncoder = passwordEncoder;
+        this.passwordEncoder = passwordEncoder;
     }
     @Override
     @Transactional
@@ -66,7 +70,7 @@ public class UserServiceImpl implements UserService {
         newUser.setFirstName(registerRequestDto.getFirstName());
         newUser.setLastName(registerRequestDto.getLastName());
         newUser.setEmail(registerRequestDto.getEmail());
-        newUser.setPassword(registerRequestDto.getPassword());
+        newUser.setPassword(passwordEncoder.encode(registerRequestDto.getPassword()));
         newUser.setRole(Role.fromString(registerRequestDto.getRole()));
         newUser.setReferralCode(generateReferralCode());
 
@@ -135,6 +139,10 @@ public class UserServiceImpl implements UserService {
         if (!changePasswordDto.getCurrentPassword().equals(user.getPassword())) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
         }
+
+//        if (!passwordEncoder.matches(changePasswordDto.getCurrentPassword(), user.getPassword())) {
+//            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+//        }
 
         // save new password
         user.setPassword(changePasswordDto.getNewPassword());
