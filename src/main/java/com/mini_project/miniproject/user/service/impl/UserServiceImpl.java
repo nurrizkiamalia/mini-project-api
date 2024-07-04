@@ -16,6 +16,7 @@ import com.mini_project.miniproject.user.repository.UserRepository;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,7 +34,6 @@ public class UserServiceImpl implements UserService {
     private final ReferralDiscountRepository referralDiscountRepository;
     private final PointsRepository pointsRepository;
     private final CloudinaryService cloudinaryService;
-
     private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository,
@@ -88,71 +88,75 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ProfileResponseDto getUserProfile(Long userId) {
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
-
-        ProfileResponseDto profileResponseDto = new ProfileResponseDto();
-        profileResponseDto.setFirstName(user.getFirstName());
-        profileResponseDto.setLastName(user.getLastName());
-        profileResponseDto.setEmail(user.getEmail());
-        profileResponseDto.setReferralCode(user.getReferralCode());
-        profileResponseDto.setAvatar(user.getAvatar());
-        profileResponseDto.setQuotes(user.getQuotes());
-
-        // Calculate total points that are not expired
-        int totalPoints = calculateTotalPoints(userId);
-        profileResponseDto.setPoints(totalPoints);
-
-        return profileResponseDto;
-    }
-
-
-    @Override
-    @Transactional
-    public void updateProfile(Long userId, ProfileSettingsDto profileSettingsDto) throws IOException {
-        // check if user exists
-        Users user = userRepository.findById(userId).
-                orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
-
-
-        // proceed the avatar
-        String avatarUrl = null;
-        if (profileSettingsDto.getAvatar() != null && !profileSettingsDto.getAvatar().isEmpty()) {
-            validateImage(profileSettingsDto.getAvatar());
-            avatarUrl = cloudinaryService.uploadImage(profileSettingsDto.getAvatar());
-        }
-
-        // save updated profile
-        user.updateProfile(profileSettingsDto.getFirstName(), profileSettingsDto.getLastName(), profileSettingsDto.getQuotes(), avatarUrl);
-        userRepository.save(user);
-
+    public ProfileResponseDto getCurrentUserProfile(Authentication authentication) {
+        Users currentUser = getUserFromAuthentication(authentication);
+        return mapToProfileResponseDto(currentUser);
     }
 
     @Override
     @Transactional
-    public void changePassword(Long userId, ChangePasswordDto changePasswordDto) {
-        Users user = userRepository.findById(userId).
-                orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
-
-        // check if the inputted current password is correct
-        if (!changePasswordDto.getCurrentPassword().equals(user.getPassword())) {
-            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
-        }
-
-//        if (!passwordEncoder.matches(changePasswordDto.getCurrentPassword(), user.getPassword())) {
-//            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
-//        }
-
-        // save new password
-        user.setPassword(changePasswordDto.getNewPassword());
-        userRepository.save(user);
-
+    public void updateCurrentUserProfile(Authentication authentication, ProfileSettingsDto profileSettingsDto) throws IOException {
+        Users currentUser = getUserFromAuthentication(authentication);
+        updateUserProfile(currentUser, profileSettingsDto);
     }
+
+    @Override
+    @Transactional
+    public void changeCurrentUserPassword(Authentication authentication, ChangePasswordDto changePasswordDto) {
+        Users currentUser = getUserFromAuthentication(authentication);
+        changeUserPassword(currentUser, changePasswordDto);
+    }
+
+
 
 
 
 // helpers
+
+    private Users getUserFromAuthentication(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ApplicationException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    private ProfileResponseDto mapToProfileResponseDto(Users user) {
+        ProfileResponseDto dto = new ProfileResponseDto();
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEmail(user.getEmail());
+        dto.setReferralCode(user.getReferralCode());
+        dto.setAvatar(user.getAvatar());
+        dto.setQuotes(user.getQuotes());
+        dto.setPoints(calculateTotalPoints(user.getId()));
+        return dto;
+    }
+
+    private void updateUserProfile(Users user, ProfileSettingsDto profileSettingsDto) throws IOException {
+        user.setFirstName(profileSettingsDto.getFirstName());
+        user.setLastName(profileSettingsDto.getLastName());
+        user.setQuotes(profileSettingsDto.getQuotes());
+
+        if (profileSettingsDto.getAvatar() != null && !profileSettingsDto.getAvatar().isEmpty()) {
+            validateImage(profileSettingsDto.getAvatar());
+            String avatarUrl = cloudinaryService.uploadImage(profileSettingsDto.getAvatar());
+            user.setAvatar(avatarUrl);
+        }
+
+        userRepository.save(user);
+    }
+
+    private void changeUserPassword(Users user, ChangePasswordDto changePasswordDto) {
+        if (!passwordEncoder.matches(changePasswordDto.getCurrentPassword(), user.getPassword())) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+        user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
+        userRepository.save(user);
+    }
+
+
     private void validateImage(MultipartFile avatar) {
         if (avatar.getSize() > 1_000_000) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, "Image size must not exceed 1MB");

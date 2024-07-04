@@ -1,7 +1,6 @@
 package com.mini_project.miniproject.user.controller;
 
 import com.mini_project.miniproject.exceptions.ApplicationException;
-import com.mini_project.miniproject.exceptions.DataNotFoundException;
 import com.mini_project.miniproject.responses.Response;
 import com.mini_project.miniproject.user.dto.ChangePasswordDto;
 import com.mini_project.miniproject.user.dto.ProfileResponseDto;
@@ -11,8 +10,8 @@ import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,22 +37,22 @@ public class UserController {
         }
     }
 
-    @GetMapping("/profile/{userId}")
-    public ResponseEntity<Response<Object>> getUserProfile(@PathVariable("userId") Long userId) {
+    @GetMapping("/profile")
+    public ResponseEntity<Response<Object>> getUserProfile(Authentication authentication) {
         try {
-            ProfileResponseDto profile = userService.getUserProfile(userId);
+            ProfileResponseDto profile = userService.getCurrentUserProfile(authentication);
             return Response.success("User profile retrieved successfully", profile);
         } catch (ApplicationException e) {
             return Response.failed(e.getHttpStatus().value(), e.getMessage());
         }
     }
 
-    @PutMapping(value = "/settings/profile/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping("/settings/profile")
     public ResponseEntity<Response<Object>> updateProfile(
-            @PathVariable Long userId,
-            @Valid @ModelAttribute ProfileSettingsDto profileSettingsDto) {
+            @Valid @ModelAttribute ProfileSettingsDto profileSettingsDto,
+            Authentication authentication) {
         try {
-            userService.updateProfile(userId, profileSettingsDto);
+            userService.updateCurrentUserProfile(authentication, profileSettingsDto);
             return Response.success("Profile updated successfully");
         } catch (ApplicationException e) {
             return Response.failed(e.getHttpStatus().value(), e.getMessage());
@@ -62,12 +61,12 @@ public class UserController {
         }
     }
 
-    @PutMapping("/settings/password/{userId}")
+    @PutMapping("/settings/password")
     public ResponseEntity<Response<Object>> changePassword(
-            @PathVariable Long userId,
-            @Valid @RequestBody ChangePasswordDto changePasswordDto) {
+            @Valid @RequestBody ChangePasswordDto changePasswordDto,
+            Authentication authentication) {
         try {
-            userService.changePassword(userId, changePasswordDto);
+            userService.changeCurrentUserPassword(authentication, changePasswordDto);
             return Response.success("Password changed successfully");
         } catch (ApplicationException e) {
             return Response.failed(e.getHttpStatus().value(), e.getMessage());
