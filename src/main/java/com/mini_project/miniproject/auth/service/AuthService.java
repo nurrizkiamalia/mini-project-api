@@ -1,9 +1,8 @@
 package com.mini_project.miniproject.auth.service;
 
-
-import com.mini_project.miniproject.auth.dto.LoginRequestDto;
-import com.mini_project.miniproject.auth.dto.LoginResponseDto;
+import org.springframework.security.core.Authentication;
 
 public interface AuthService {
-    LoginResponseDto login(LoginRequestDto loginRequest);
+    String generateToken(Authentication authentication);
+    void logout(String token);
 }
