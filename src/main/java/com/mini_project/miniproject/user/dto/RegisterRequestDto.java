@@ -27,9 +27,6 @@ public class RegisterRequestDto {
     @NotBlank(message = "Password is required")
     private String password;
 
-//    @NotNull(message = "Role is required")
-//    private Role role;
-
     @NotBlank(message = "Role is required")
     private String role;
 
@@ -52,13 +49,5 @@ public class RegisterRequestDto {
         this.role = role;
     }
 
-//    public Users toEntity() {
-//        Users user = new Users();
-//        user.setFirstName(firstName);
-//        user.setLastName(lastName);
-//        user.setEmail(email);
-//        user.setPassword(password);
-//        return user;
-//    }
 
 }

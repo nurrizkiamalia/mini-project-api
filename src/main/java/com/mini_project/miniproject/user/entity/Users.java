@@ -65,7 +65,7 @@ public class Users {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    private Role role; // Ensure this matches the Role enum
+    private Role role;
 
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")

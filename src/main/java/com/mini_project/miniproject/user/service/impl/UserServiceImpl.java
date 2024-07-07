@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
         // save the user to the repository
         Users savedUser = userRepository.save(newUser);
 
-        // Give 10% referral discount for the registered user
+        // Give 10% referral discount for the registered user and 10000 points for the referrer
         if (referralUser.isPresent()) {
             giveReferralDiscount(savedUser);
             addPointsToReferralOwner(referralUser.get());
