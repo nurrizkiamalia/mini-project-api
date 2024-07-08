@@ -8,7 +8,8 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import jakarta.servlet.http.HttpServletResponse;
+//import jakarta.servlet.http.HttpServletResponse;
+//import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,6 +43,10 @@ public class SecurityConfig {
     private final RsaKeyProperties rsaKeyConfig;
     private UserDetailsServiceImpl userDetailsService;
     private final JwtBlacklistFilter jwtBlacklistFilter;
+
+//    @Value("${app.cors.allowed-origins}")
+//    private String[] allowedOrigins;
+
     public SecurityConfig(RsaKeyProperties rsaKeyConfig,
                           UserDetailsServiceImpl userDetailsService,
                           JwtBlacklistFilter jwtBlacklistFilter) {
@@ -94,6 +99,20 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration configuration = new CorsConfiguration();
+//        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+//        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+//        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+//        configuration.setAllowCredentials(true);
+//        configuration.setMaxAge(3600L); // 1 hour
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/api/**", configuration);
+//        return source;
+//    }
+
     @Bean
     public JwtDecoder jwtDecoder() {
         return NimbusJwtDecoder.withPublicKey(rsaKeyConfig.publicKey()).build();
