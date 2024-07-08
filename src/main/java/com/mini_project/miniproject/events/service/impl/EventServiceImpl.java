@@ -4,6 +4,10 @@ import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
 import com.mini_project.miniproject.events.entity.Events;
 import com.mini_project.miniproject.events.mapper.CreateEventMapper;
 import com.mini_project.miniproject.events.repository.EventRepository;
+import com.mini_project.miniproject.events.repository.TicketTiersRepository;
+import com.mini_project.miniproject.events.repository.EventVouchersRepository;
+import com.mini_project.miniproject.events.repository.ReferralPromoRepository;
+
 import com.mini_project.miniproject.events.service.EventService;
 import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.helpers.CloudinaryService;
@@ -21,18 +25,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
-
     private final UserRepository userRepository;
-
     private final CreateEventMapper createEventMapper;
+    private final TicketTiersRepository ticketTiersRepository;
+    private final EventVouchersRepository eventVouchersRepository;
+    private final ReferralPromoRepository referralPromoRepository;
+
 
     public EventServiceImpl (
             EventRepository eventRepository,
             UserRepository userRepository,
-            CreateEventMapper createEventMapper){
+            CreateEventMapper createEventMapper,
+            TicketTiersRepository ticketTiersRepository,
+            EventVouchersRepository eventVouchersRepository,
+            ReferralPromoRepository referralPromoRepository){
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.createEventMapper = createEventMapper;
+        this.ticketTiersRepository = ticketTiersRepository;
+        this.eventVouchersRepository = eventVouchersRepository;
+        this.referralPromoRepository = referralPromoRepository;
     }
 
     @Transactional
@@ -50,54 +62,35 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new ApplicationException("Organizer not found"));
 
         Events event = createEventMapper.toEntity(createEventDTO, organizer);
-        return eventRepository.save(event);
+        event = eventRepository.save(event);
+
+        final Events finalEvent = event;
+
+        // Save ticket tiers
+        if (finalEvent.getTicketTiers() != null) {
+            finalEvent.getTicketTiers().forEach(tier -> {
+                tier.setEvent(finalEvent);
+                ticketTiersRepository.save(tier);
+            });
+        }
+
+        // Save event vouchers
+        if (finalEvent.getEventVouchers() != null) {
+            finalEvent.getEventVouchers().forEach(voucher -> {
+                voucher.setEvent(finalEvent);
+                eventVouchersRepository.save(voucher);
+            });
+        }
+
+        // Save referral promo
+        if (finalEvent.getReferralPromo() != null) {
+            finalEvent.getReferralPromo().setEvent(finalEvent);
+            referralPromoRepository.save(finalEvent.getReferralPromo());
+        }
+
+        return finalEvent;
+
     }
 
-
-//
-//    private final EventRepository eventRepository;
-////    private final CloudinaryService cloudinaryService;
-//
-//    public EventServiceImpl(EventRepository eventRepository, CloudinaryService cloudinaryService) {
-//        this.eventRepository = eventRepository;
-////        this.cloudinaryService = cloudinaryService;
-//    }
-//
-//    @Override
-//    @Transactional
-//    public Events createEvent(CreateEventRequestDto createEventRequestDto, Authentication authentication) {
-//        Jwt jwt = (Jwt) authentication.getPrincipal();
-//        Long organizerId = jwt.getClaim("userId");
-//
-//        Events event = new Events();
-//        event.setOrganizerId(organizerId);
-//        event.setName(createEventRequestDto.getName());
-//        event.setDescription(createEventRequestDto.getDescription());
-//        event.setDate(createEventRequestDto.getDate());
-//        event.setTime(createEventRequestDto.getTime());
-//        event.setLocation(createEventRequestDto.getLocation());
-//        event.setCity(createEventRequestDto.getCity());
-//        event.setEventType(createEventRequestDto.getEventType());
-//        event.setCategory(createEventRequestDto.getCategory());
-//
-////        // Upload event picture to Cloudinary
-////        if (createEventRequestDto.getEventPicture() != null) {
-////            String imageUrl = cloudinaryService.uploadImage(createEventRequestDto.getEventPicture());
-////            event.setEventPicture(imageUrl);
-////        }
-//
-//        event.setTicketTiers(createEventRequestDto.getTicketTiers());
-//        event.setEventVouchers(createEventRequestDto.getEventVouchers());
-//        event.setReferralPromo(createEventRequestDto.getReferralPromo());
-//
-//        // Set bidirectional relationships
-//        event.getTicketTiers().forEach(tier -> tier.setEvent(event));
-//        event.getEventVouchers().forEach(voucher -> voucher.setEvent(event));
-//        if (event.getReferralPromo() != null) {
-//            event.getReferralPromo().setEvent(event);
-//        }
-//
-//        return eventRepository.save(event);
-//    }
 }
 

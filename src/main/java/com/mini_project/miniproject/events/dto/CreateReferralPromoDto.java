@@ -3,7 +3,7 @@ package com.mini_project.miniproject.events.dto;
 import lombok.Data;
 
 @Data
-public class CreateReferralPromoDTO {
+public class CreateReferralPromoDto {
     private Double discountPercentage;
     private Integer quantity;
 }

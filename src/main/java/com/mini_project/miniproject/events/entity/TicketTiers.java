@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.events.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class TicketTiers {
 //    @Column(name = "event_id", nullable = false)
 //    private Long eventId;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "event_id")
     private Events event;

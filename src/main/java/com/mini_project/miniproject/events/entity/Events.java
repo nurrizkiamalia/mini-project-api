@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.events.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.mini_project.miniproject.user.entity.Users;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -57,12 +58,15 @@ public class Events {
     @Column(name = "event_picture", length = 100)
     private String eventPicture;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketTiers> ticketTiers;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventVouchers> eventVouchers;
 
+    @JsonManagedReference
     @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private ReferralPromo referralPromo;
 
