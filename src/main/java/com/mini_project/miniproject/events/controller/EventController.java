@@ -2,7 +2,8 @@ package com.mini_project.miniproject.events.controller;
 
 //import com.mini_project.miniproject.auth.annotation.IsOrganizer;
 import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
-import com.mini_project.miniproject.events.dto.EventDto;
+import com.mini_project.miniproject.events.dto.EventResponseDto;
+import com.mini_project.miniproject.events.dto.PaginatedEventResponseDto;
 import com.mini_project.miniproject.events.entity.Events;
 import com.mini_project.miniproject.events.service.EventService;
 import com.mini_project.miniproject.responses.Response;
@@ -44,7 +45,23 @@ public class EventController {
 
     @GetMapping("/{eventId}")
     public ResponseEntity<Response<Object>> getEventById (@PathVariable Long eventId) {
-        EventDto event = eventService.getEventById(eventId);
+        EventResponseDto event = eventService.getEventById(eventId);
         return Response.success("Event retrieved successfully", event);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<PaginatedEventResponseDto> searchEvents(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String dates,
+            @RequestParam(required = false) String prices,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long organizerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size) {
+
+        PaginatedEventResponseDto response = eventService.searchEvents(
+                category, city, dates, prices, keyword, organizerId, page, size);
+        return ResponseEntity.ok(response);
     }
 }

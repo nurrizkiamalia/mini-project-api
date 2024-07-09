@@ -67,6 +67,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/error/**").permitAll();
                     auth.requestMatchers("/api/v1/login").permitAll();
                     auth.requestMatchers("/api/v1/register").permitAll();
+                    auth.requestMatchers("/api/v1/events/{eventId}").permitAll();
+                    auth.requestMatchers("/api/v1/events/search").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
