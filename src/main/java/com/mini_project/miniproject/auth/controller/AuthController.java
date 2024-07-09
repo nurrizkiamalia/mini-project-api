@@ -39,13 +39,31 @@ public class AuthController {
         UserAuth userDetails = (UserAuth) authentication.getPrincipal();
         String token = authService.generateToken(authentication);
 
+//        LoginResponseDto responseDto = new LoginResponseDto();
+//        responseDto.setMessage("User logged in successfully");
+//        responseDto.setToken(token);
+//
+//        Cookie cookie = new Cookie("sid", token);
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add("Set-Cookie", cookie.getName() + "=" + cookie.getValue() + "; Path=/; HttpOnly");
+//        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(responseDto);
+
         LoginResponseDto responseDto = new LoginResponseDto();
         responseDto.setMessage("User logged in successfully");
         responseDto.setToken(token);
 
+        // Setting the cookie with SameSite=None; Secure; HttpOnly attributes
         Cookie cookie = new Cookie("sid", token);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true); // This ensures the cookie is only sent over HTTPS
+        cookie.setMaxAge(24 * 60 * 60); // 1 day expiry, adjust as needed
+        cookie.setAttribute("SameSite", "None");
+
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Set-Cookie", cookie.getName() + "=" + cookie.getValue() + "; Path=/; HttpOnly");
+        headers.add("Set-Cookie", String.format("%s=%s; Path=%s; HttpOnly; Secure; SameSite=None",
+                cookie.getName(), cookie.getValue(), cookie.getPath()));
+
         return ResponseEntity.status(HttpStatus.OK).headers(headers).body(responseDto);
     }
 
