@@ -22,11 +22,8 @@ public class TicketTiers {
     @Column(name = "id", nullable = false)
     private Long id;
 
-//    @Column(name = "event_id", nullable = false)
-//    private Long eventId;
-
     @JsonBackReference
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
     private Events event;
 

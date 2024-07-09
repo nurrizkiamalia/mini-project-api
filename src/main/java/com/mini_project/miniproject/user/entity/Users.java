@@ -70,6 +70,10 @@ public class Users {
     @Column(name = "role", nullable = false)
     private Role role;
 
+//    @OneToMany(mappedBy = "users")
+//    private List<Events> organizedEvents = new ArrayList<>();
+
+
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
@@ -82,9 +86,6 @@ public class Users {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
-
-//    @OneToMany(mappedBy = "users")
-//    private List<Events> organizedEvents = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

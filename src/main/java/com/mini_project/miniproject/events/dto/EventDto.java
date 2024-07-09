@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.events.dto;
 
+import com.mini_project.miniproject.user.entity.Users;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -7,7 +8,9 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Data
-public class CreateEventRequestDto {
+public class EventDto {
+    private Long id;
+//    private Users organizer;
     private String name;
     private String description;
     private LocalDate date;
@@ -17,6 +20,7 @@ public class CreateEventRequestDto {
     private String eventType;
     private String category;
     private Integer referralQuota;
-    private List<CreateTicketTierDto> ticketTiers;
-    private List<CreateEventVoucherDto> eventVouchers;
+    private String eventPicture;
+//    private List<CreateTicketTierDto> ticketTiers;
+//    private List<CreateEventVoucherDto> eventVouchers;
 }

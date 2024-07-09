@@ -1,7 +1,6 @@
 package com.mini_project.miniproject.events.mapper;
 
 import com.mini_project.miniproject.events.entity.EventVouchers;
-import com.mini_project.miniproject.events.entity.ReferralPromo;
 import com.mini_project.miniproject.events.entity.TicketTiers;
 import com.mini_project.miniproject.user.entity.Users;
 import org.springframework.stereotype.Component;
@@ -26,7 +25,9 @@ public class CreateEventMapper {
         event.setCity(dto.getCity());
         event.setEventType(dto.getEventType());
         event.setCategory(dto.getCategory());
-        event.setOrganizerId(organizer.getId());
+        event.setReferralQuota(dto.getReferralQuota());
+//        event.setOrganizerId(organizer.getId());
+        event.setOrganizer(organizer);
 
         event.setTicketTiers(new ArrayList<>());
         event.setEventVouchers(new ArrayList<>());
@@ -52,14 +53,6 @@ public class CreateEventMapper {
                 voucher.setEvent(event);
                 event.getEventVouchers().add(voucher);
             });
-        }
-
-        if (dto.getReferralPromo() != null) {
-            ReferralPromo promo = new ReferralPromo();
-            promo.setDiscountPercentage(dto.getReferralPromo().getDiscountPercentage());
-            promo.setQuantity(dto.getReferralPromo().getQuantity());
-            promo.setEvent(event);
-            event.setReferralPromo(promo);
         }
 
         return event;
