@@ -1,6 +1,7 @@
 package com.mini_project.miniproject.user.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.mini_project.miniproject.events.entity.Events;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,6 +12,8 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -66,6 +69,10 @@ public class Users {
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
+
+//    @OneToMany(mappedBy = "users")
+//    private List<Events> organizedEvents = new ArrayList<>();
+
 
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
