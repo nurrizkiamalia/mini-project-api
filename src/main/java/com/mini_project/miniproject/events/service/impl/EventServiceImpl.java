@@ -146,16 +146,22 @@ public class EventServiceImpl implements EventService {
             List<Predicate> predicates = new ArrayList<>();
 
             if (category != null && !category.isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("category"), category));
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("category")),
+                        category.toLowerCase()
+                ));
             }
 
             if (city != null && !city.isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("city"), city));
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("city")),
+                        city.toLowerCase()
+                ));
             }
 
             if (dates != null) {
                 LocalDate now = LocalDate.now();
-                switch (dates) {
+                switch (dates.toLowerCase()) {
                     case "this week":
                         predicates.add(criteriaBuilder.between(root.get("date"), now, now.plusWeeks(1)));
                         break;
@@ -170,21 +176,28 @@ public class EventServiceImpl implements EventService {
             }
 
             if (prices != null) {
-                switch (prices) {
+                switch (prices.toLowerCase()) {
                     case "free":
-                        predicates.add(criteriaBuilder.equal(root.get("eventType"), "Free"));
+                        predicates.add(criteriaBuilder.equal(
+                                criteriaBuilder.lower(root.get("eventType")),
+                                "free"
+                        ));
                         break;
                     case "paid":
-                        predicates.add(criteriaBuilder.equal(root.get("eventType"), "Paid"));
+                        predicates.add(criteriaBuilder.equal(
+                                criteriaBuilder.lower(root.get("eventType")),
+                                "paid"
+                        ));
                         break;
                     // "all" is default, so we don't need to add a predicate for it
                 }
             }
 
             if (keyword != null && !keyword.isEmpty()) {
+                String lowercaseKeyword = "%" + keyword.toLowerCase() + "%";
                 predicates.add(criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), lowercaseKeyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), lowercaseKeyword)
                 ));
             }
 
