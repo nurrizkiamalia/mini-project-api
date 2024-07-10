@@ -36,7 +36,7 @@ public class EventController {
         return Response.success("Event created successfully.", createdEvent);
     }
 
-    @PostMapping(value = "/{eventId}/upload-picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{eventId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 //    @IsOrganizer
     public ResponseEntity<Response<Object>> uploadEventPicture(
             @PathVariable Long eventId,
