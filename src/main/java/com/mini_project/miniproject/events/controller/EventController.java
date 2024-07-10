@@ -1,12 +1,15 @@
 package com.mini_project.miniproject.events.controller;
 
 //import com.mini_project.miniproject.auth.annotation.IsOrganizer;
+import com.mini_project.miniproject.auth.annotation.IsOrganizer;
 import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
 import com.mini_project.miniproject.events.dto.EventResponseDto;
 import com.mini_project.miniproject.events.dto.PaginatedEventResponseDto;
+import com.mini_project.miniproject.events.dto.UpdateEventResponseDto;
 import com.mini_project.miniproject.events.entity.Events;
 import com.mini_project.miniproject.events.service.EventService;
 import com.mini_project.miniproject.responses.Response;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -63,5 +66,19 @@ public class EventController {
         PaginatedEventResponseDto response = eventService.searchEvents(
                 category, city, dates, prices, keyword, organizerId, page, size);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{eventId}")
+    public ResponseEntity<Response<Object>> updateEvent(@PathVariable Long eventId,
+                                                              @Valid @RequestBody CreateEventRequestDto requestDto,
+                                                              Authentication authentication) {
+        UpdateEventResponseDto updatedEvent = eventService.updateEvent(eventId, requestDto, authentication);
+        return Response.success("Event updated successfully", updatedEvent);
+    }
+
+    @DeleteMapping("/{eventId}")
+    public ResponseEntity<Response<Void>> deleteEvent(@PathVariable Long eventId, Authentication authentication) {
+        eventService.deleteEvent(eventId, authentication);
+        return Response.success("Event deleted successfully");
     }
 }

@@ -3,6 +3,7 @@ package com.mini_project.miniproject.events.service;
 import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
 import com.mini_project.miniproject.events.dto.EventResponseDto;
 import com.mini_project.miniproject.events.dto.PaginatedEventResponseDto;
+import com.mini_project.miniproject.events.dto.UpdateEventResponseDto;
 import com.mini_project.miniproject.events.entity.Events;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,8 +17,11 @@ public interface EventService {
     PaginatedEventResponseDto searchEvents(String category, String city, String dates,
                                            String prices, String keyword, Long organizerId,
                                            int page, int size);
+    UpdateEventResponseDto updateEvent(Long eventId, CreateEventRequestDto requestDto, Authentication authentication);
 
-//    Events createEvent(CreateEventRequestDto requestDto, Authentication authentication) throws IOException;
+    void deleteEvent(Long eventId, Authentication authentication);
+
+
     // 2. get all events based on query parameters (category, city, date, price, search, organizerId), apply pagination (all users)
     // 2. get all events based on query parameters (category, city, date, price, search), apply pagination (all users)
 

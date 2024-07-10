@@ -1,9 +1,9 @@
 package com.mini_project.miniproject.events.service.impl;
 
-import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
-import com.mini_project.miniproject.events.dto.EventResponseDto;
-import com.mini_project.miniproject.events.dto.PaginatedEventResponseDto;
+import com.mini_project.miniproject.events.dto.*;
+import com.mini_project.miniproject.events.entity.EventVouchers;
 import com.mini_project.miniproject.events.entity.Events;
+import com.mini_project.miniproject.events.entity.TicketTiers;
 import com.mini_project.miniproject.events.mapper.CreateEventMapper;
 import com.mini_project.miniproject.events.repository.EventRepository;
 import com.mini_project.miniproject.events.repository.TicketTiersRepository;
@@ -61,6 +61,7 @@ public class EventServiceImpl implements EventService {
         this.cloudinaryService = cloudinaryService;
     }
 
+    @Override
     @Transactional
     public Events createEvent(CreateEventRequestDto createEventDTO, Authentication authentication) {
         Jwt jwt = (Jwt) authentication.getPrincipal();
@@ -102,6 +103,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public String uploadEventPicture(Long eventId, MultipartFile file, Authentication authentication) throws IOException {
         Jwt jwt = (Jwt) authentication.getPrincipal();
         Long userId = jwt.getClaim("userId");
@@ -113,13 +115,10 @@ public class EventServiceImpl implements EventService {
         }
 
         Events event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found"));
+                .orElseThrow(() -> new ApplicationException("Event not found"));
 
-//        if (!event.getOrganizerId().equals(userId)) {
-//            throw new RuntimeException("You are not authorized to upload a picture for this event");
-//        }
         if (!event.getOrganizer().getId().equals(userId)) {
-            throw new RuntimeException("You are not authorized to upload a picture for this event");
+            throw new ApplicationException("You are not authorized to upload a picture for this event");
         }
 
         String imageUrl = cloudinaryService.uploadImage(file);
@@ -220,6 +219,128 @@ public class EventServiceImpl implements EventService {
         response.setTotalEvents(eventsPage.getTotalElements());
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public UpdateEventResponseDto updateEvent(Long eventId, CreateEventRequestDto requestDto, Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user has the ORGANIZER role
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new AccessDeniedException("Only users with ORGANIZER role can update events");
+        }
+
+        Events event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(userId)) {
+            throw new ApplicationException("You are not authorized to update this event");
+        }
+
+        // Update event details
+        event.setName(requestDto.getName());
+        event.setDescription(requestDto.getDescription());
+        event.setDate(requestDto.getDate());
+        event.setTime(requestDto.getTime());
+        event.setLocation(requestDto.getLocation());
+        event.setCity(requestDto.getCity());
+        event.setEventType(requestDto.getEventType());
+        event.setCategory(requestDto.getCategory());
+        event.setReferralQuota(requestDto.getReferralQuota());
+
+        // Update ticket tiers
+        event.getTicketTiers().clear();
+        for (CreateTicketTierDto tierDto : requestDto.getTicketTiers()) {
+            TicketTiers tier = new TicketTiers();
+            tier.setName(tierDto.getName());
+            tier.setPrice(tierDto.getPrice());
+            tier.setTotalSeats(tierDto.getTotalSeats());
+            tier.setEvent(event);
+            event.getTicketTiers().add(tier);
+        }
+
+        // Update event vouchers
+        event.getEventVouchers().clear();
+        if (requestDto.getEventVouchers() != null) {
+            for (CreateEventVoucherDto voucherDto : requestDto.getEventVouchers()) {
+                EventVouchers voucher = new EventVouchers();
+                voucher.setCode(voucherDto.getCode());
+                voucher.setDiscountPercentage(voucherDto.getDiscountPercentage());
+                voucher.setStartDate(LocalDate.parse(voucherDto.getStartDate()));
+                voucher.setEndDate(LocalDate.parse(voucherDto.getEndDate()));
+                voucher.setEvent(event);
+                event.getEventVouchers().add(voucher);
+            }
+        }
+
+        // Save the updated event
+        Events updatedEvent = eventRepository.save(event);
+
+        // Convert to UpdateEventResponseDto
+        UpdateEventResponseDto responseDto = new UpdateEventResponseDto();
+        responseDto.setId(updatedEvent.getId().toString());
+        responseDto.setName(updatedEvent.getName());
+        responseDto.setDescription(updatedEvent.getDescription());
+        responseDto.setDate(updatedEvent.getDate());
+        responseDto.setTime(updatedEvent.getTime());
+        responseDto.setLocation(updatedEvent.getLocation());
+        responseDto.setCity(updatedEvent.getCity());
+        responseDto.setEventType(updatedEvent.getEventType());
+        responseDto.setCategory(updatedEvent.getCategory());
+        responseDto.setReferralQuota(updatedEvent.getReferralQuota());
+        responseDto.setEventPicture(updatedEvent.getEventPicture());
+
+        // Set ticket tiers in response
+        List<UpdateEventResponseDto.TicketTierDTO> ticketTierDTOs = updatedEvent.getTicketTiers().stream()
+                .map(tier -> {
+                    UpdateEventResponseDto.TicketTierDTO dto = new UpdateEventResponseDto.TicketTierDTO();
+                    dto.setName(tier.getName());
+                    dto.setPrice(tier.getPrice());
+                    dto.setTotalSeats(tier.getTotalSeats());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        responseDto.setTicketTiers(ticketTierDTOs);
+
+        // Set event vouchers in response
+        List<UpdateEventResponseDto.EventVoucherDTO> voucherDTOs = updatedEvent.getEventVouchers().stream()
+                .map(voucher -> {
+                    UpdateEventResponseDto.EventVoucherDTO dto = new UpdateEventResponseDto.EventVoucherDTO();
+                    dto.setCode(voucher.getCode());
+                    dto.setDiscountPercentage(voucher.getDiscountPercentage());
+                    dto.setStartDate(voucher.getStartDate());
+                    dto.setEndDate(voucher.getEndDate());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        responseDto.setEventVouchers(voucherDTOs);
+
+        return responseDto;
+
+    }
+
+    @Override
+    public void deleteEvent(Long eventId, Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user has the ORGANIZER role
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new AccessDeniedException("Only users with ORGANIZER role can delete events");
+        }
+
+        Events event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(userId)) {
+            throw new ApplicationException("You are not authorized to delete this event");
+        }
+
+        eventRepository.delete(event);
     }
 
     private EventResponseDto convertToDto(Events event) {
