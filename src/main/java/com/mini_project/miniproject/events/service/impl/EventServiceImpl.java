@@ -27,7 +27,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.persistence.criteria.Predicate;
+
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -162,13 +165,19 @@ public class EventServiceImpl implements EventService {
                 LocalDate now = LocalDate.now();
                 switch (dates.toLowerCase()) {
                     case "this week":
-                        predicates.add(criteriaBuilder.between(root.get("date"), now, now.plusWeeks(1)));
+                        LocalDate startOfWeek = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                        LocalDate endOfWeek = startOfWeek.plusDays(6);
+                        predicates.add(criteriaBuilder.between(root.get("date"), startOfWeek, endOfWeek));
                         break;
                     case "this month":
-                        predicates.add(criteriaBuilder.between(root.get("date"), now, now.plusMonths(1)));
+                        LocalDate startOfMonth = now.withDayOfMonth(1);
+                        LocalDate endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
+                        predicates.add(criteriaBuilder.between(root.get("date"), startOfMonth, endOfMonth));
                         break;
                     case "this year":
-                        predicates.add(criteriaBuilder.between(root.get("date"), now, now.plusYears(1)));
+                        LocalDate startOfYear = now.withDayOfYear(1);
+                        LocalDate endOfYear = now.with(TemporalAdjusters.lastDayOfYear());
+                        predicates.add(criteriaBuilder.between(root.get("date"), startOfYear, endOfYear));
                         break;
                     // "all" is default, so we don't need to add a predicate for it
                 }
