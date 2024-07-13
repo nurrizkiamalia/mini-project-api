@@ -4,6 +4,7 @@ import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.orders.dto.ConfirmPaymentRequestDTO;
 import com.mini_project.miniproject.orders.dto.CreateOrderRequestDTO;
 import com.mini_project.miniproject.orders.dto.CreateOrderResponseDTO;
+import com.mini_project.miniproject.orders.dto.OrderDetailsDTO;
 import com.mini_project.miniproject.orders.service.OrderService;
 import com.mini_project.miniproject.responses.Response;
 import org.hibernate.query.Order;
@@ -28,5 +29,11 @@ public class OrderController {
     public ResponseEntity<Response<String>> confirmPayment(@RequestBody ConfirmPaymentRequestDTO confirmPaymentRequestDTO, Authentication authentication){
         orderService.confirmPayment(confirmPaymentRequestDTO, authentication);
         return Response.success("Order proceed successfully.");
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<Response<Object>> getOrderDetails(@PathVariable Long orderId, Authentication authentication){
+        OrderDetailsDTO orderDetailsDTO = orderService.getOrderDetails(orderId, authentication);
+        return Response.success("Order successfully retrieved.", orderDetailsDTO);
     }
 }

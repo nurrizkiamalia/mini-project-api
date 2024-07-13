@@ -1,5 +1,7 @@
 package com.mini_project.miniproject.orders.service.impl;
 
+import com.mini_project.miniproject.events.entity.Events;
+import com.mini_project.miniproject.events.entity.TicketTiers;
 import com.mini_project.miniproject.events.repository.EventRepository;
 import com.mini_project.miniproject.events.repository.EventVouchersRepository;
 import com.mini_project.miniproject.events.repository.TicketTiersRepository;
@@ -7,6 +9,7 @@ import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.orders.dto.ConfirmPaymentRequestDTO;
 import com.mini_project.miniproject.orders.dto.CreateOrderRequestDTO;
 import com.mini_project.miniproject.orders.dto.CreateOrderResponseDTO;
+import com.mini_project.miniproject.orders.dto.OrderDetailsDTO;
 import com.mini_project.miniproject.orders.entity.OrderDiscounts;
 import com.mini_project.miniproject.orders.entity.OrderItems;
 import com.mini_project.miniproject.orders.entity.Orders;
@@ -297,7 +300,73 @@ public class OrderServiceImpl implements OrderService {
         orderRespository.save(order);
     }
 
+    @Override
+    public OrderDetailsDTO getOrderDetails(Long orderId, Authentication authentication) {
+        // Get userId from JWT token
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+
+        // Get the order by its id and status
+        Orders order = orderRespository.findByIdAndStatus(orderId, true)
+                .orElseThrow(() -> new ApplicationException("Order not found"));
+
+        // Check if the order belongs to the user
+        if (!order.getCustomerId().equals(userId)) {
+            throw new ApplicationException("You are not authorized to view this order");
+        }
+
+        OrderDetailsDTO orderDetails = new OrderDetailsDTO();
+        orderDetails.setId(order.getId());
+        orderDetails.setTotalPrice(order.getTotalPrice());
+
+        // Get the order's total tickets and ticket details
+        List<OrderItems> orderItems = orderItemRepository.findByOrderId(orderId);
+        int totalTickets = orderItems.stream().mapToInt(OrderItems::getQuantity).sum();
+        orderDetails.setTotalTickets(totalTickets);
+
+        List<OrderDetailsDTO.TicketDetailsDTO> ticketDetailsList = orderItems.stream()
+                .map(item -> {
+                    OrderDetailsDTO.TicketDetailsDTO ticketDetails = orderDetails.new TicketDetailsDTO();
+                    TicketTiers ticketTier = ticketTiersRepository.findById(item.getTicketTierId())
+                            .orElseThrow(() -> new ApplicationException("Ticket tier not found"));
+                    ticketDetails.setTicketTier(ticketTier.getName());
+                    ticketDetails.setQuantity(item.getQuantity());
+                    return ticketDetails;
+                })
+                .collect(Collectors.toList());
+        orderDetails.setTicketDetails(ticketDetailsList);
+
+        // Get the event details
+        Events event = eventRepository.findById(order.getEventId())
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+
+        OrderDetailsDTO.EventDetailsDTO eventDetails = orderDetails.new EventDetailsDTO();
+        eventDetails.setId(event.getId());
+        eventDetails.setName(event.getName());
+        eventDetails.setCategory(event.getCategory());
+        eventDetails.setDate(event.getDate());
+        eventDetails.setTime(event.getTime());
+        eventDetails.setLocation(event.getLocation());
+        eventDetails.setCity(event.getCity());
+        orderDetails.setEventDetail(eventDetails);
+
+        return orderDetails;
+    }
+
 }
+
+
+//    @Override
+//    public OrderDetailsDTO getOrderDetails(Authentication authentication, Long orderId) {
+//        // get userId from jwt token
+//        // get the order by its id
+//        // check if the order belongs to the user
+//        // get the order's total price
+//        // get the order's total ticket (get order items by its order_id in table order_items, get the quantity)
+//        // get the ticket details (from the table order_items fields quantity and ticket_tier_id, from the ticket_tier_id get the name of the ticket from the table ticket_tiers)
+//        // get the event details (get the event details of the order, there is a field event_id in table orders that refers to table events)
+//        return null;
+//    }
 
 //    @Override
 //    @Transactional
