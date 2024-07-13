@@ -380,6 +380,7 @@ public class EventServiceImpl implements EventService {
         dto.setTicketTiers(event.getTicketTiers().stream()
                 .map(tier -> {
                     EventResponseDto.TicketTierDTO tierDTO = new EventResponseDto.TicketTierDTO();
+                    tierDTO.setId(tier.getId());
                     tierDTO.setName(tier.getName());
                     tierDTO.setPrice(tier.getPrice());
                     tierDTO.setTotalSeats(tier.getTotalSeats());
@@ -391,6 +392,7 @@ public class EventServiceImpl implements EventService {
         dto.setEventVouchers(event.getEventVouchers().stream()
                 .map(voucher -> {
                     EventResponseDto.EventVoucherDTO voucherDTO = new EventResponseDto.EventVoucherDTO();
+                    voucherDTO.setId(voucher.getId());
                     voucherDTO.setCode(voucher.getCode());
                     voucherDTO.setDiscountPercentage(voucher.getDiscountPercentage());
                     voucherDTO.setStartDate(voucher.getStartDate());

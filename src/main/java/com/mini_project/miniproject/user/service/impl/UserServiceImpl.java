@@ -169,7 +169,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private int calculateTotalPoints(Long userId) {
-        List<Points> userPoints = pointsRepository.findAllByUserIdAndExpiryDateAfter(userId, LocalDate.now());
+        List<Points> userPoints = pointsRepository.findByUserIdAndExpiryDateAfterOrderByExpiryDateAsc(userId, LocalDate.now());
         return userPoints.stream().mapToInt(Points::getAmount).sum();
     }
 

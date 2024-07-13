@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -32,7 +33,7 @@ public class EventVouchers {
     private String code;
 
     @Column(name = "discount_percentage", nullable = false)
-    private Double discountPercentage;
+    private BigDecimal discountPercentage;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;

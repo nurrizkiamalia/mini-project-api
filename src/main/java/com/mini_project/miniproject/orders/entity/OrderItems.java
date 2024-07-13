@@ -1,6 +1,7 @@
-package com.mini_project.miniproject.user.entity;
+package com.mini_project.miniproject.orders.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,37 +10,39 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "referral_discounts")
-public class ReferralDiscount {
+@Table(name = "order_items")
+public class OrderItems {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "referral_discounts_id_gen")
-    @SequenceGenerator(name = "referral_discounts_id_gen", sequenceName = "referral_discounts_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "order_items_id_gen")
+    @SequenceGenerator(name = "order_items_id_gen", sequenceName = "order_items_id_seq", allocationSize = 1)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Orders order;
 
-    @Column(name = "name", nullable = false)
-    private String name = "DISC10";
+    @Column(name = "ticket_tier_id")
+    private Long ticketTierId;
 
-    @Column(name = "discount_percentage", nullable = false)
-    private BigDecimal discountPercentage = BigDecimal.valueOf(10);
+    @Column(name = "quantity")
+    private Integer quantity;
 
-    @Column(name = "expiry_date", nullable = false)
-    private LocalDate expiryDate;
+    @Column(name = "price_per_ticket", precision = 11, scale = 2)
+    private BigDecimal pricePerTicket;
 
+    @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
@@ -62,4 +65,5 @@ public class ReferralDiscount {
     public void preRemove() {
         this.deletedAt = Instant.now();
     }
+
 }
