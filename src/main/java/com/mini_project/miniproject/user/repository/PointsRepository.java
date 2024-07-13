@@ -9,5 +9,8 @@ import java.util.List;
 
 @Repository
 public interface PointsRepository extends JpaRepository<Points, Long> {
-    List<Points> findAllByUserIdAndExpiryDateAfter(Long userId, LocalDate now);
+//    List<Points> findAllByUserIdAndExpiryDateAfter(Long userId, LocalDate now);
+    List<Points> findByUserIdAndExpiryDateAfterOrderByExpiryDateAsc(Long userId, LocalDate now);
+
+
 }

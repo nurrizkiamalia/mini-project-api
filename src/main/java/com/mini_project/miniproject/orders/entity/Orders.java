@@ -1,6 +1,7 @@
-package com.mini_project.miniproject.user.entity;
+package com.mini_project.miniproject.orders.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,37 +10,40 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "referral_discounts")
-public class ReferralDiscount {
+@Table(name = "orders")
+public class Orders {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "referral_discounts_id_gen")
-    @SequenceGenerator(name = "referral_discounts_id_gen", sequenceName = "referral_discounts_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "orders_id_gen")
+    @SequenceGenerator(name = "orders_id_gen", sequenceName = "orders_id_seq", allocationSize = 1)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "customer_id")
+    private Long customerId;
 
-    @Column(name = "name", nullable = false)
-    private String name = "DISC10";
+    @Column(name = "event_id")
+    private Long eventId;
 
-    @Column(name = "discount_percentage", nullable = false)
-    private BigDecimal discountPercentage = BigDecimal.valueOf(10);
+    @Column(name = "total_price")
+    private BigDecimal totalPrice;
 
-    @Column(name = "expiry_date", nullable = false)
-    private LocalDate expiryDate;
+    @Column(name = "status")
+    private boolean status;
 
+    @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
@@ -62,4 +66,11 @@ public class ReferralDiscount {
     public void preRemove() {
         this.deletedAt = Instant.now();
     }
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItems> orderItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderDiscounts> orderDiscounts = new ArrayList<>();
+
 }
