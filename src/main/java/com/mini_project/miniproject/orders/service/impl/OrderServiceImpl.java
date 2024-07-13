@@ -27,12 +27,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
     private final OrderRespository orderRespository;
     private final OrderItemRepository orderItemRepository;
-    private  final OrderDiscountRepository orderDiscountRepository;
+    private final OrderDiscountRepository orderDiscountRepository;
     private final PointsRepository pointsRepository;
     private final ReferralDiscountRepository referralDiscountRepository;
     private final UserRepository userRepository;
@@ -40,7 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private final TicketTiersRepository ticketTiersRepository;
     private final EventVouchersRepository eventVouchersRepository;
 
-    public OrderServiceImpl (
+    public OrderServiceImpl(
             OrderRespository orderRespository,
             OrderItemRepository orderItemRepository,
             OrderDiscountRepository orderDiscountRepository,
@@ -49,7 +50,7 @@ public class OrderServiceImpl implements OrderService {
             UserRepository userRepository,
             EventRepository eventRepository,
             TicketTiersRepository ticketTiersRepository,
-            EventVouchersRepository eventVouchersRepository){
+            EventVouchersRepository eventVouchersRepository) {
         this.orderRespository = orderRespository;
         this.orderItemRepository = orderItemRepository;
         this.orderDiscountRepository = orderDiscountRepository;
@@ -63,21 +64,21 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public CreateOrderResponseDTO createOrder(CreateOrderRequestDTO createOrderRequestDTO, Authentication authentication){
+    public CreateOrderResponseDTO createOrder(CreateOrderRequestDTO createOrderRequestDTO, Authentication authentication) {
         // extract userId from JWT
         Jwt jwt = (Jwt) authentication.getPrincipal();
         Long userId = jwt.getClaim("userId");
 
         // validate userId in userRepository
-        if (userRepository.findById(userId).isEmpty()){
-            throw  new ApplicationException("User not found.");
+        if (userRepository.findById(userId).isEmpty()) {
+            throw new ApplicationException("User not found.");
         }
 
         // validate eventId from eventRepository
         var event = eventRepository.findById(createOrderRequestDTO.getEventId()).orElseThrow(() -> new ApplicationException("Event not found"));
 
         // validate if the buyer of the event is not the event's organizer
-        if(Objects.equals(event.getOrganizer().getId(), userId)) {
+        if (Objects.equals(event.getOrganizer().getId(), userId)) {
             throw new ApplicationException("Cannot buy your own event");
         }
 
@@ -87,12 +88,11 @@ public class OrderServiceImpl implements OrderService {
         order.setEventId(event.getId());
         order.setStatus(false);
 
-        // initialize original price and total price
-        // BigDecimal originalPrice = BigDecimal.ZERO;
+        // initialize total price
         BigDecimal totalPrice = BigDecimal.ZERO;
 
         // get the ticket(s) & validate
-        for (CreateOrderRequestDTO.TicketRequest ticketRequest : createOrderRequestDTO.getTickets()){
+        for (CreateOrderRequestDTO.TicketRequest ticketRequest : createOrderRequestDTO.getTickets()) {
             var ticketTier = ticketTiersRepository.findById(ticketRequest.getTicketId()).orElseThrow(() -> new ApplicationException("Ticket not found with id:" + ticketRequest.getTicketId()));
             BigDecimal itemPrice = ticketTier.getPrice().multiply(BigDecimal.valueOf(ticketRequest.getQuantity()));
             totalPrice = totalPrice.add(itemPrice);
@@ -106,13 +106,16 @@ public class OrderServiceImpl implements OrderService {
 
         }
 
-        // get the original price and total price
-        // order.setOriginalPrice(totalPrice);
+        // get original price and temp total price
         order.setTotalPrice(totalPrice);
+        BigDecimal originalPrice = totalPrice;
+        order.setOriginalPrice(originalPrice);
+
 
         // get voucher(s) & validate
         if (createOrderRequestDTO.getEventVoucherId() != null) {
-            var voucher = eventVouchersRepository.findById(createOrderRequestDTO.getEventVoucherId()).orElseThrow(() -> new ApplicationException("Voucher not found"));
+            var voucher = eventVouchersRepository.findById(createOrderRequestDTO.getEventVoucherId())
+                    .orElseThrow(() -> new ApplicationException("Voucher not found"));
             LocalDate now = LocalDate.now();
             if (voucher.getStartDate().compareTo(now) <= 0 && voucher.getEndDate().compareTo(now) >= 0) {
                 BigDecimal discountAmount = totalPrice.multiply(voucher.getDiscountPercentage().divide(BigDecimal.valueOf(100)));
@@ -128,35 +131,38 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // get the disc10 & check if the buyer has the discount
-        if (createOrderRequestDTO.isUseDisc10()) {
-            var referralDiscount = referralDiscountRepository.findByUserIdAndExpiryDateAfter(userId, LocalDate.now());
-            if (referralDiscount != null) {
-                BigDecimal discountAmount = totalPrice.multiply(referralDiscount.getDiscountPercentage().divide(BigDecimal.valueOf(100)));
+        if (Boolean.TRUE.equals(createOrderRequestDTO.getUseDisc10())) {
+            // check if the event has sufficient referral quota
+            if (event.getReferralQuota() != null && event.getReferralQuota() > 0) {
+                var referralDiscount = referralDiscountRepository.findByUserIdAndExpiryDateAfter(userId, LocalDate.now());
+                if (referralDiscount != null) {
+                    BigDecimal discountAmount = totalPrice.multiply(referralDiscount.getDiscountPercentage().divide(BigDecimal.valueOf(100)));
 
-                OrderDiscounts discount = new OrderDiscounts();
-                discount.setOrder(order);
-                discount.setDiscountType("REFERRAL");
-                discount.setDiscountAmount(discountAmount);
-                order.getOrderDiscounts().add(discount);
+                    OrderDiscounts discount = new OrderDiscounts();
+                    discount.setOrder(order);
+                    discount.setDiscountType("REFERRAL");
+                    discount.setDiscountAmount(discountAmount);
+                    order.getOrderDiscounts().add(discount);
 
-                totalPrice = totalPrice.subtract(discountAmount);
-
+                    totalPrice = totalPrice.subtract(discountAmount);
+                }
+            } else {
+                throw new ApplicationException("No referral quota available for this event.");
             }
-
         }
 
-
         // get the points & check if the buyer has it and the amount is sufficient
-        if (createOrderRequestDTO.getPoints() > 0){
+        int requestedPoints = createOrderRequestDTO.getPoints() != null ? createOrderRequestDTO.getPoints() : 0;
+        if (requestedPoints > 0) {
             List<Points> userPoints = pointsRepository.findByUserIdAndExpiryDateAfterOrderByExpiryDateAsc(userId, LocalDate.now());
             int availablePoints = userPoints.stream().mapToInt(Points::getAmount).sum();
-            if (availablePoints >= createOrderRequestDTO.getPoints()){
+            if (availablePoints >= requestedPoints) {
                 BigDecimal pointsDiscount;
-                if (createOrderRequestDTO.getPoints() > totalPrice.intValue()) {
+                if (requestedPoints > totalPrice.intValue()) {
                     // If points exceed total price, cap the discount at the total price
                     pointsDiscount = totalPrice;
                 } else {
-                    pointsDiscount = BigDecimal.valueOf(createOrderRequestDTO.getPoints());
+                    pointsDiscount = BigDecimal.valueOf(requestedPoints);
                 }
 
                 OrderDiscounts discount = new OrderDiscounts();
@@ -170,17 +176,31 @@ public class OrderServiceImpl implements OrderService {
                 // Ensure totalPrice doesn't go below zero
                 totalPrice = totalPrice.max(BigDecimal.ZERO);
             }
+//            } else {
+//                throw new ApplicationException("Insufficient points. Available points: " + availablePoints);
+//            }
         }
 
         // finalize order
-        // order.setOriginalPrice(originalPrice);
+        order.setOriginalPrice(originalPrice);
         order.setTotalPrice(totalPrice);
         order = orderRespository.save(order);
 
         // create order response
         CreateOrderResponseDTO response = new CreateOrderResponseDTO();
         response.setOrderId(order.getId());
+        response.setOriginalPrice(order.getOriginalPrice());
         response.setFinalPrice(order.getTotalPrice());
+        List<OrderDiscounts> orderDiscounts = orderDiscountRepository.findAllByOrderId(order.getId());
+        List<CreateOrderResponseDTO.OrderDiscountsDTO> appliedDiscounts = orderDiscounts.stream()
+                .map(discount -> {
+                    CreateOrderResponseDTO.OrderDiscountsDTO dto = response.new OrderDiscountsDTO();
+                    dto.setDiscountType(discount.getDiscountType());
+                    dto.setDiscountAmount(discount.getDiscountAmount());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        response.setAppliedDiscounts(appliedDiscounts);
 
         return response;
     }
@@ -188,6 +208,173 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void confirmPayment(ConfirmPaymentRequestDTO confirmPaymentRequestDTO, Authentication authentication) {
-        return;
+        // Extract userId from JWT
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+
+        // Check if the user exists
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ApplicationException("User not found."));
+
+        // Check if the order exists
+        Orders order = orderRespository.findById(confirmPaymentRequestDTO.getOrderId())
+                .orElseThrow(() -> new ApplicationException("Order not found."));
+
+        // Validate if the order belongs to the user
+        if (!order.getCustomerId().equals(userId)) {
+            throw new ApplicationException("This order does not belong to the authenticated user.");
+        }
+
+        // Check order status
+        if (order.isStatus()) {
+            throw new ApplicationException("This order has already been paid.");
+        }
+
+        // Process points discount if used
+        OrderDiscounts pointsDiscount = order.getOrderDiscounts().stream()
+                .filter(d -> "POINTS".equals(d.getDiscountType()))
+                .findFirst()
+                .orElse(null);
+
+        if (pointsDiscount != null) {
+            int pointsUsed = pointsDiscount.getDiscountAmount().intValue();
+            List<Points> userPoints = pointsRepository.findByUserIdAndExpiryDateAfterOrderByExpiryDateAsc(userId, LocalDate.now());
+            int remainingPointsToUse = pointsUsed;
+
+            for (Points points : userPoints) {
+                if (remainingPointsToUse <= 0) break;
+                if (points.getAmount() <= remainingPointsToUse) {
+                    remainingPointsToUse -= points.getAmount();
+                    pointsRepository.delete(points);
+                } else {
+                    points.setAmount(points.getAmount() - remainingPointsToUse);
+                    pointsRepository.save(points);
+                    break;
+                }
+            }
+        }
+
+        // Process DISC10 if used
+        OrderDiscounts referralDiscount = order.getOrderDiscounts().stream()
+                .filter(d -> "REFERRAL".equals(d.getDiscountType()))
+                .findFirst()
+                .orElse(null);
+
+        if (referralDiscount != null) {
+            // Delete DISC10 for the user
+            referralDiscountRepository.deleteByUserId(userId);
+
+            // Decrement the referral quota in the purchased event by 1
+            var event = eventRepository.findById(order.getEventId())
+                    .orElseThrow(() -> new ApplicationException("Event not found."));
+            if (event.getReferralQuota() != null && event.getReferralQuota() > 0) {
+                event.setReferralQuota(event.getReferralQuota() - 1);
+                eventRepository.save(event);
+            }
+        }
+
+        // Subtract total seats in ticket tiers based on the purchased ticket's quantity
+        for (OrderItems item : order.getOrderItems()) {
+            var ticketTier = ticketTiersRepository.findById(item.getTicketTierId())
+                    .orElseThrow(() -> new ApplicationException("Ticket tier not found."));
+            int remainingSeats = ticketTier.getTotalSeats() - item.getQuantity();
+            if (remainingSeats < 0) {
+                throw new ApplicationException("Not enough seats available for ticket: " + ticketTier.getName());
+            }
+            ticketTier.setTotalSeats(remainingSeats);
+            ticketTiersRepository.save(ticketTier);
+        }
+
+        // Set the order's status to true (paid)
+        order.setStatus(true);
+
+        // Set the order's payment method (if inputted)
+        if (confirmPaymentRequestDTO.getPaymentMethod() != null && !confirmPaymentRequestDTO.getPaymentMethod().isEmpty()) {
+            order.setPaymentMethod(confirmPaymentRequestDTO.getPaymentMethod());
+        }
+
+        // Save the updated order
+        orderRespository.save(order);
     }
+
 }
+
+//    @Override
+//    @Transactional
+//    public void confirmPayment(ConfirmPaymentRequestDTO confirmPaymentRequestDTO, Authentication authentication) {
+//        // check and validate user
+//        // check if the order exists
+//        // check and validate if the order belongs to the user
+//        // check order status
+//        // delete points id used
+//        // delete disc10 if used and decrement the referral quota in the purchased event by 1
+//        // subtract total seats in ticket tiers based on the purchased ticket's quantity
+//        // set the order's status to true
+//        // set the order's payment method (if inputted)
+//        // save order
+//    }
+
+
+
+
+//        // get voucher(s) & validate
+//        if (createOrderRequestDTO.getEventVoucherId() != null) {
+//            var voucher = eventVouchersRepository.findById(createOrderRequestDTO.getEventVoucherId()).orElseThrow(() -> new ApplicationException("Voucher not found"));
+//            LocalDate now = LocalDate.now();
+//            if (voucher.getStartDate().compareTo(now) <= 0 && voucher.getEndDate().compareTo(now) >= 0) {
+//                BigDecimal discountAmount = totalPrice.multiply(voucher.getDiscountPercentage().divide(BigDecimal.valueOf(100)));
+//
+//                OrderDiscounts discount = new OrderDiscounts();
+//                discount.setOrder(order);
+//                discount.setDiscountType("VOUCHER");
+//                discount.setDiscountAmount(discountAmount);
+//                order.getOrderDiscounts().add(discount);
+//
+//                totalPrice = totalPrice.subtract(discountAmount);
+//            }
+//        }
+//
+//        // get the disc10 & check if the buyer has the discount
+//        if (createOrderRequestDTO.isUseDisc10()) {
+//            var referralDiscount = referralDiscountRepository.findByUserIdAndExpiryDateAfter(userId, LocalDate.now());
+//            if (referralDiscount != null) {
+//                BigDecimal discountAmount = totalPrice.multiply(referralDiscount.getDiscountPercentage().divide(BigDecimal.valueOf(100)));
+//
+//                OrderDiscounts discount = new OrderDiscounts();
+//                discount.setOrder(order);
+//                discount.setDiscountType("REFERRAL");
+//                discount.setDiscountAmount(discountAmount);
+//                order.getOrderDiscounts().add(discount);
+//
+//                totalPrice = totalPrice.subtract(discountAmount);
+//
+//            }
+//
+//        }
+//
+//
+//        // get the points & check if the buyer has it and the amount is sufficient
+//        if (createOrderRequestDTO.getPoints() > 0){
+//            List<Points> userPoints = pointsRepository.findByUserIdAndExpiryDateAfterOrderByExpiryDateAsc(userId, LocalDate.now());
+//            int availablePoints = userPoints.stream().mapToInt(Points::getAmount).sum();
+//            if (availablePoints >= createOrderRequestDTO.getPoints()){
+//                BigDecimal pointsDiscount;
+//                if (createOrderRequestDTO.getPoints() > totalPrice.intValue()) {
+//                    // If points exceed total price, cap the discount at the total price
+//                    pointsDiscount = totalPrice;
+//                } else {
+//                    pointsDiscount = BigDecimal.valueOf(createOrderRequestDTO.getPoints());
+//                }
+//
+//                OrderDiscounts discount = new OrderDiscounts();
+//                discount.setOrder(order);
+//                discount.setDiscountType("POINTS");
+//                discount.setDiscountAmount(pointsDiscount);
+//                order.getOrderDiscounts().add(discount);
+//
+//                totalPrice = totalPrice.subtract(pointsDiscount);
+//
+//                // Ensure totalPrice doesn't go below zero
+//                totalPrice = totalPrice.max(BigDecimal.ZERO);
+//            }
+//        }

@@ -32,11 +32,17 @@ public class Orders {
     @Column(name = "event_id")
     private Long eventId;
 
+    @Column(name = "original_price")
+    private BigDecimal originalPrice;
+
     @Column(name = "total_price")
     private BigDecimal totalPrice;
 
     @Column(name = "status")
     private boolean status;
+
+    @Column(name = "payment_method")
+    private String paymentMethod;
 
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
