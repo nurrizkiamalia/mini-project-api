@@ -6,10 +6,7 @@ import com.mini_project.miniproject.events.repository.EventRepository;
 import com.mini_project.miniproject.events.repository.EventVouchersRepository;
 import com.mini_project.miniproject.events.repository.TicketTiersRepository;
 import com.mini_project.miniproject.exceptions.ApplicationException;
-import com.mini_project.miniproject.orders.dto.ConfirmPaymentRequestDTO;
-import com.mini_project.miniproject.orders.dto.CreateOrderRequestDTO;
-import com.mini_project.miniproject.orders.dto.CreateOrderResponseDTO;
-import com.mini_project.miniproject.orders.dto.OrderDetailsDTO;
+import com.mini_project.miniproject.orders.dto.*;
 import com.mini_project.miniproject.orders.entity.OrderDiscounts;
 import com.mini_project.miniproject.orders.entity.OrderItems;
 import com.mini_project.miniproject.orders.entity.Orders;
@@ -21,6 +18,10 @@ import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.repository.PointsRepository;
 import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
 import com.mini_project.miniproject.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -353,7 +354,144 @@ public class OrderServiceImpl implements OrderService {
         return orderDetails;
     }
 
+    @Override
+    public PaginatedOrderDetailsDTO getPaginatedOrderDetails(Authentication authentication, int page, int size) {
+        // Get userId from JWT token
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+
+        // Create Pageable object
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        // Fetch paginated orders for the user
+        Page<Orders> ordersPage = orderRespository.findByCustomerIdAndStatus(userId, true, pageable);
+
+        // Map Orders to OrderDetailsDTO
+        List<OrderDetailsDTO> orderDetailsList = ordersPage.getContent().stream()
+                .map(this::mapOrderToOrderDetailsDTO)
+                .collect(Collectors.toList());
+
+        // Create and populate PaginatedOrderDetailsDTO
+        PaginatedOrderDetailsDTO paginatedDetails = new PaginatedOrderDetailsDTO();
+        paginatedDetails.setOrders(orderDetailsList);
+        paginatedDetails.setPage(page);
+        paginatedDetails.setPerPage(size);
+        paginatedDetails.setTotalPages(ordersPage.getTotalPages());
+        paginatedDetails.setTotalOrders(ordersPage.getTotalElements());
+
+        return paginatedDetails;
+    }
+
+    private OrderDetailsDTO mapOrderToOrderDetailsDTO(Orders order) {
+        OrderDetailsDTO orderDetails = new OrderDetailsDTO();
+        orderDetails.setId(order.getId());
+        orderDetails.setTotalPrice(order.getTotalPrice());
+
+        // Get the order items
+        List<OrderItems> orderItems = orderItemRepository.findByOrderId(order.getId());
+        int totalTickets = orderItems.stream().mapToInt(OrderItems::getQuantity).sum();
+        orderDetails.setTotalTickets(totalTickets);
+
+        // Map ticket details
+        List<OrderDetailsDTO.TicketDetailsDTO> ticketDetailsList = orderItems.stream()
+                .map(item -> {
+                    OrderDetailsDTO.TicketDetailsDTO ticketDetails = orderDetails.new TicketDetailsDTO();
+                    TicketTiers ticketTier = ticketTiersRepository.findById(item.getTicketTierId())
+                            .orElseThrow(() -> new ApplicationException("Ticket tier not found"));
+                    ticketDetails.setTicketTier(ticketTier.getName());
+                    ticketDetails.setQuantity(item.getQuantity());
+                    return ticketDetails;
+                })
+                .collect(Collectors.toList());
+        orderDetails.setTicketDetails(ticketDetailsList);
+
+        // Get and map event details
+        Events event = eventRepository.findById(order.getEventId())
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+
+        OrderDetailsDTO.EventDetailsDTO eventDetails = orderDetails.new EventDetailsDTO();
+        eventDetails.setId(event.getId());
+        eventDetails.setName(event.getName());
+        eventDetails.setCategory(event.getCategory());
+        eventDetails.setDate(event.getDate());
+        eventDetails.setTime(event.getTime());
+        eventDetails.setLocation(event.getLocation());
+        eventDetails.setCity(event.getCity());
+        orderDetails.setEventDetail(eventDetails);
+
+        return orderDetails;
+    }
+
+
 }
+
+//    @Override
+//    public PaginatedOrderDetailsDTO getPaginatedOrderDetails(Authentication authentication, int page, int size) {
+//        // get userId from JWT token
+//        Jwt jwt = (Jwt) authentication.getPrincipal();
+//        Long userId = jwt.getClaim("userId");
+//
+//        // create pageable object
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//
+//        // fetch paginated orders for the user
+//        Page<Orders> ordersPage = orderRespository.findByCustomerId(userId, pageable);
+//
+//        // map orders to OrderDetailsDTO
+//        List<OrderDetailsDTO> orderDetailsList = ordersPage.getContent().stream()
+//                .map(this::mapOrderToOrderDetailsDTO)
+//                .collect(Collectors.toList());
+//
+//        // create and populate PaginatedOrderDetailsDTO
+//        PaginatedOrderDetailsDTO paginatedDetails = new PaginatedOrderDetailsDTO();
+//        paginatedDetails.getOrders(orderDetailsList);
+//        paginatedDetails.setPage(page);
+//        paginatedDetails.setPage(size);
+//        paginatedDetails.setTotalPages(ordersPage.getTotalPages());
+//        paginatedDetails.setTotalOrders(ordersPage.getTotalElements());
+//
+//        return paginatedDetails;
+//    }
+//
+//    private Object mapOrderToOrderDetailsDTO(Orders order) {
+//        OrderDetailsDTO orderDetails = new OrderDetailsDTO();
+//        orderDetails.setId(order.getId());
+//        orderDetails.setTotalPrice(order.getTotalPrice());
+//
+//        // get the order items
+//        List<OrderItems> orderItems = orderItemRepository.findByOrderId(order.getId());
+//        int totalTickets = orderItems.stream().mapToInt(OrderItems::getQuantity).sum();
+//        orderDetails.setTotalTickets(totalTickets);
+//
+//        // map ticket details
+//        List<OrderDetailsDTO.TicketDetailsDTO> ticketDetailsList = orderItems.stream()
+//                .map(item -> {
+//                    OrderDetailsDTO.TicketDetailsDTO ticketDetails = orderDetails.new TicketDetailsDTO();
+//                    TicketTiers ticketTier = ticketTiersRepository.findById(item.getTicketTierId())
+//                            .orElseThrow(() -> new ApplicationException("Ticket tier not found"));
+//                    ticketDetails.setTicketTier(ticketTier.getName());
+//                    ticketDetails.setQuantity(item.getQuantity());
+//                    return  ticketDetails;
+//                })
+//                .collect(Collectors.toList());
+//        orderDetails.setTicketDetails(ticketDetailsList);
+//
+//        // get and map event details
+//        Events event = eventRepository.findById(order.getEventId())
+//                .orElseThrow(() -> new ApplicationException("Event not found."));
+//
+//        OrderDetailsDTO.EventDetailsDTO eventDetails = orderDetails.new EventDetailsDTO();
+//        eventDetails.setId(event.getId());
+//        eventDetails.setName(event.getName());
+//        eventDetails.setCategory(event.getCategory());
+//        eventDetails.setDate(event.getDate());
+//        eventDetails.setTime(event.getTime());
+//        eventDetails.setLocation(event.getLocation());
+//        eventDetails.setCity(event.getCity());
+//        orderDetails.setEventDetail(eventDetails);
+//
+//        return orderDetails;
+//    }
 
 
 //    @Override
