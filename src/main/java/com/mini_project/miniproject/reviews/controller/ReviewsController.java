@@ -53,12 +53,12 @@ public class ReviewsController {
         return Response.success("Reviews by event retrieved successfully.", response);
     }
 
-    @GetMapping("/user")
-    public ResponseEntity<Response<Object>> getReviewsByUser(
-            Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size){
-        PaginatedReviewResponseDTO response = reviewService.getReviewsByUser(authentication, page, size);
-        return Response.success("Reviews by user retrieved successfully", response);
-    }
+//    @GetMapping("/user")
+//    public ResponseEntity<Response<Object>> getReviewsByUser(
+//            Authentication authentication,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "9") int size){
+//        PaginatedReviewResponseDTO response = reviewService.getReviewsByUser(authentication, page, size);
+//        return Response.success("Reviews by user retrieved successfully", response);
+//    }
 }

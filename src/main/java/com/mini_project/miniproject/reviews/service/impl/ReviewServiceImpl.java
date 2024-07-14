@@ -3,13 +3,12 @@ package com.mini_project.miniproject.reviews.service.impl;
 import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.orders.entity.Orders;
 import com.mini_project.miniproject.orders.repository.OrderRespository;
-import com.mini_project.miniproject.reviews.dto.CreateReviewDTO;
-import com.mini_project.miniproject.reviews.dto.PaginatedReviewResponseDTO;
-import com.mini_project.miniproject.reviews.dto.ReviewResponseDTO;
-import com.mini_project.miniproject.reviews.dto.UpdateReviewDTO;
+import com.mini_project.miniproject.reviews.dto.*;
 import com.mini_project.miniproject.reviews.entity.Reviews;
 import com.mini_project.miniproject.reviews.repository.ReviewsRepository;
 import com.mini_project.miniproject.reviews.service.ReviewService;
+import com.mini_project.miniproject.user.entity.Users;
+import com.mini_project.miniproject.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,9 +25,12 @@ import java.util.stream.Collectors;
 public class ReviewServiceImpl implements ReviewService {
     private final ReviewsRepository reviewsRepository;
     private final OrderRespository orderRespository;
-    public ReviewServiceImpl(ReviewsRepository reviewsRepository, OrderRespository orderRespository){
+    private final UserRepository userRepository;
+    public ReviewServiceImpl(ReviewsRepository reviewsRepository, OrderRespository orderRespository, UserRepository userRepository){
         this.reviewsRepository = reviewsRepository;
         this.orderRespository = orderRespository;
+        this.userRepository = userRepository;
+
     }
     @Override
     @Transactional
@@ -103,13 +105,13 @@ public class ReviewServiceImpl implements ReviewService {
         return createPaginatedResponse(reviewPage);
     }
 
-    @Override
-    public PaginatedReviewResponseDTO getReviewsByUser(Authentication authentication, int page, int size) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Reviews> reviewPage = reviewsRepository.findByUserId(userId, pageable);
-        return createPaginatedResponse(reviewPage);
-    }
+//    @Override
+//    public PaginatedReviewResponseDTO getReviewsByUser(Authentication authentication, int page, int size) {
+//        Long userId = getUserIdFromAuthentication(authentication);
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//        Page<Reviews> reviewPage = reviewsRepository.findByUserId(userId, pageable);
+//        return createPaginatedResponse(reviewPage);
+//    }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
         Jwt jwt = (Jwt) authentication.getPrincipal();
@@ -128,8 +130,8 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     private PaginatedReviewResponseDTO createPaginatedResponse(Page<Reviews> reviewPage) {
-        List<ReviewResponseDTO> reviews = reviewPage.getContent().stream()
-                .map(this::mapToReviewResponseDTO)
+        List<ReviewDetailsDTO> reviews = reviewPage.getContent().stream()
+                .map(this::mapToReviewDetailsDTO)
                 .collect(Collectors.toList());
         PaginatedReviewResponseDTO response = new PaginatedReviewResponseDTO();
         response.setReviews(reviews);
@@ -140,5 +142,26 @@ public class ReviewServiceImpl implements ReviewService {
 
         return response;
     }
+
+    private ReviewDetailsDTO mapToReviewDetailsDTO(Reviews review) {
+        ReviewDetailsDTO dto = new ReviewDetailsDTO();
+        dto.setId(review.getId());
+        dto.setRating(review.getRating());
+        dto.setReviewText(review.getReviewText());
+
+        Users user = userRepository.findById(review.getUserId())
+                .orElseThrow(() -> new ApplicationException("User not found"));
+
+        ReviewDetailsDTO.UserDTO userDetailsDTO = new ReviewDetailsDTO.UserDTO();
+        userDetailsDTO.setFirstName(user.getFirstName());
+        userDetailsDTO.setLastName(user.getLastName());
+        userDetailsDTO.setAvatar(user.getAvatar());
+
+        dto.setUser(userDetailsDTO);
+
+        return dto;
+    }
+
+
 }
 

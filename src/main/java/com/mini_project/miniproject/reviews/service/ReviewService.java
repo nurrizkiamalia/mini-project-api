@@ -14,6 +14,6 @@ public interface ReviewService {
     void deleteReview(Long reviewId, Authentication authentication);
     ReviewResponseDTO getReview(Long reviewId);
     PaginatedReviewResponseDTO getReviewsByEvent(Long eventId, int page, int size);
-    PaginatedReviewResponseDTO getReviewsByUser(Authentication authentication, int page, int size);
+//    PaginatedReviewResponseDTO getReviewsByUser(Authentication authentication, int page, int size);
 
 }

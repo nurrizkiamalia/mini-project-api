@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class PaginatedReviewResponseDTO {
-    private List<ReviewResponseDTO> reviews;
+    private List<ReviewDetailsDTO> reviews;
     private int page;
     private int perPage;
     private int totalPages;
