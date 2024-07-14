@@ -292,13 +292,19 @@ public class OrderServiceImpl implements OrderService {
         // Set the order's status to true (paid)
         order.setStatus(true);
 
-        // Set the order's payment method (if inputted)
-        if (confirmPaymentRequestDTO.getPaymentMethod() != null && !confirmPaymentRequestDTO.getPaymentMethod().isEmpty()) {
-            order.setPaymentMethod(confirmPaymentRequestDTO.getPaymentMethod());
-        }
+        // set the payment method
+        order.setPaymentMethod(confirmPaymentRequestDTO.getPaymentMethod());
+
+        // generate and set invoice for the confirmed order
+        String invoiceNumber = generateInvoice(order.getId());
+        order.setInvoice(invoiceNumber);
 
         // Save the updated order
         orderRespository.save(order);
+    }
+
+    private String generateInvoice(Long orderId) {
+        return "INV" + String.format("%05d", orderId);
     }
 
     @Override
@@ -318,6 +324,7 @@ public class OrderServiceImpl implements OrderService {
 
         OrderDetailsDTO orderDetails = new OrderDetailsDTO();
         orderDetails.setId(order.getId());
+        orderDetails.setInvoice(order.getInvoice());
         orderDetails.setTotalPrice(order.getTotalPrice());
 
         // Get the order's total tickets and ticket details
@@ -385,6 +392,7 @@ public class OrderServiceImpl implements OrderService {
     private OrderDetailsDTO mapOrderToOrderDetailsDTO(Orders order) {
         OrderDetailsDTO orderDetails = new OrderDetailsDTO();
         orderDetails.setId(order.getId());
+        orderDetails.setInvoice(orderDetails.getInvoice());
         orderDetails.setTotalPrice(order.getTotalPrice());
 
         // Get the order items
@@ -424,3 +432,10 @@ public class OrderServiceImpl implements OrderService {
 
 
 }
+
+
+
+// Set the order's payment method (if inputted)  // edit this part, so the
+//        if (confirmPaymentRequestDTO.getPaymentMethod() != null && !confirmPaymentRequestDTO.getPaymentMethod().isEmpty()) {
+//            order.setPaymentMethod(confirmPaymentRequestDTO.getPaymentMethod());
+//        }

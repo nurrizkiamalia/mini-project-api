@@ -44,6 +44,9 @@ public class Orders {
     @Column(name = "payment_method")
     private String paymentMethod;
 
+    @Column(name = "invoice")
+    private String invoice;
+
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
