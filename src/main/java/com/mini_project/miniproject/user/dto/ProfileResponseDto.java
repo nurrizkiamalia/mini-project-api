@@ -10,5 +10,19 @@ public class ProfileResponseDto {
     private String referralCode;
     private String avatar;
     private String quotes;
+    private String role;
     private int points; // sum of points the user has that are not expired
+
+//    public void setRole(String role) {
+//        this.role = role;
+//    }
 }
+
+//    public String getRole(Role role) {
+//        return role.toString();
+//    }
+//
+//    public void setRole(String role) {
+//        this.role = role;
+//    }
+

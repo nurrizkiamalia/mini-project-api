@@ -130,6 +130,7 @@ public class UserServiceImpl implements UserService {
         dto.setReferralCode(user.getReferralCode());
         dto.setAvatar(user.getAvatar());
         dto.setQuotes(user.getQuotes());
+        dto.setRole(user.getRole().name());
         dto.setPoints(calculateTotalPoints(user.getId()));
         return dto;
     }
