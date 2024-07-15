@@ -15,6 +15,7 @@ import com.mini_project.miniproject.helpers.CloudinaryService;
 import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -351,6 +352,27 @@ public class EventServiceImpl implements EventService {
 
         eventRepository.delete(event);
     }
+
+//    @Override
+//    public PaginatedEventResponseForOrganizerDTO getEventsForOrganizer(Authentication authentication, int page, int size) {
+//        // Get userId and userRole from authentication
+//        Jwt jwt = (Jwt) authentication.getPrincipal();
+//        Long userId = jwt.getClaim("userId");
+//        String userRole = jwt.getClaim("role");
+//
+//        // Check if the user is an organizer
+//        if (!"ORGANIZER".equals(userRole)) {
+//            throw new ApplicationException("Only organizers can access this feature");
+//        }
+//
+//        // get list of events created by the current organizer
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//
+//        Page<Events> eventsPage = eventRepository.findByOrganizerId(userId, pageable);
+//
+//
+//        return null;
+//    }
 
     private EventResponseDto convertToDto(Events event) {
         EventResponseDto dto = new EventResponseDto();

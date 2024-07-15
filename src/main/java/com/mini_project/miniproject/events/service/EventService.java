@@ -1,9 +1,6 @@
 package com.mini_project.miniproject.events.service;
 
-import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
-import com.mini_project.miniproject.events.dto.EventResponseDto;
-import com.mini_project.miniproject.events.dto.PaginatedEventResponseDto;
-import com.mini_project.miniproject.events.dto.UpdateEventResponseDto;
+import com.mini_project.miniproject.events.dto.*;
 import com.mini_project.miniproject.events.entity.Events;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,11 +18,8 @@ public interface EventService {
 
     void deleteEvent(Long eventId, Authentication authentication);
 
+    // get event list (current organizer only)
+//    PaginatedEventResponseForOrganizerDTO getEventsForOrganizer(Authentication authentication, int page, int size);
 
-    // 2. get all events based on query parameters (category, city, date, price, search, organizerId), apply pagination (all users)
-    // 2. get all events based on query parameters (category, city, date, price, search), apply pagination (all users)
-
-    // 3. get an event by its id (all users)
-    // 4. update an event by its id (ORGANIZER only)
-    // 5. delete an event by its id (ORGANIZER only)
+    // get event by id (current organizer only)
 }

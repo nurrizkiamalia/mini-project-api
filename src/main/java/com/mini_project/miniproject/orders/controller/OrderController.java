@@ -51,4 +51,10 @@ public class OrderController {
         PaginatedOrdersForOrganizerDTO response = orderService.getOrdersForOrganizer(authentication, page, size);
         return Response.success("Successfully retrieved orders for this organizer.", response);
     }
+
+    @GetMapping("/{orderId}/organizer")
+    public ResponseEntity<Response<Object>> getOrderDetailsForOrganizer(@PathVariable Long orderId, Authentication authentication){
+        OrderDetailsForOrganizerDTO response = orderService.getOrderDetailsForOrganizer(orderId, authentication);
+        return Response.success("Order details succesfully retrieved for this organizer.", response);
+    }
 }

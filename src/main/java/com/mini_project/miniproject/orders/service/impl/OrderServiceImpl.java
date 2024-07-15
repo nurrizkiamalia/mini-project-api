@@ -447,7 +447,8 @@ public class OrderServiceImpl implements OrderService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         // Get list of orders for events that this organizer created
-        Page<Orders> ordersPage = orderRepository.findOrdersByEventOrganizerId(userId, pageable);
+//        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
+        Page<Orders> ordersPage = orderRepository.findPaidOrdersByEventOrganizerId(userId, pageable);
 
         // Map Orders to OrdersForOrganizerDTO
         List<OrdersForOrganizerDTO> orderDTOs = ordersPage.getContent().stream()
@@ -463,6 +464,68 @@ public class OrderServiceImpl implements OrderService {
         paginatedResponse.setTotalOrders(ordersPage.getTotalElements());
 
         return paginatedResponse;
+    }
+
+    @Override
+    public OrderDetailsForOrganizerDTO getOrderDetailsForOrganizer(Long orderId, Authentication authentication) {
+        // Get userId and userRole from authentication
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user is an organizer
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new ApplicationException("Only organizers can access this feature");
+        }
+
+        // Get the order by its id and status
+        Orders order = orderRepository.findByIdAndStatus(orderId, true)
+                .orElseThrow(() -> new ApplicationException("Order not found"));
+
+        // check if the organizer is the creator of the event in the order
+        Events event = eventRepository.findById(order.getEventId())
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(userId)) {
+            throw new ApplicationException("You do not have permission to access this order");
+        }
+
+        // Get order details
+        OrderDetailsForOrganizerDTO orderDetails = new OrderDetailsForOrganizerDTO();
+        orderDetails.setOrderId(orderId);
+        orderDetails.setOriginalPrice(order.getOriginalPrice());
+        orderDetails.setTotalPrice(order.getTotalPrice());
+
+        // get tickets for the current order
+        List<OrderItems> orderItems = orderItemRepository.findByOrderId(orderId);
+
+        List<OrderDetailsForOrganizerDTO.PurchasedTicketsDTO> ticketDetailsList = orderItems.stream()
+                .map(item -> {
+                    OrderDetailsForOrganizerDTO.PurchasedTicketsDTO ticketDetails = orderDetails.new PurchasedTicketsDTO();
+                    TicketTiers ticketTier = ticketTiersRepository.findById(item.getTicketTierId())
+                            .orElseThrow(() -> new ApplicationException("Ticket tier not found"));
+                    ticketDetails.setTicketName(ticketTier.getName());
+                    ticketDetails.setPrice(item.getPricePerTicket());
+                    ticketDetails.setQuantity(item.getQuantity());
+                    return ticketDetails;
+                })
+                .collect(Collectors.toList());
+        orderDetails.setTickets(ticketDetailsList);
+
+        // Get applied discounts for the current order
+        List<OrderDiscounts> orderDiscounts = orderDiscountRepository.findAllByOrderId(orderId);
+
+        List<OrderDetailsForOrganizerDTO.AppliedDiscountsDTO> appliedDiscountsList = orderDiscounts.stream()
+                .map(discount -> {
+                    OrderDetailsForOrganizerDTO.AppliedDiscountsDTO appliedDiscount = orderDetails.new AppliedDiscountsDTO();
+                    appliedDiscount.setDiscountType(discount.getDiscountType());
+                    appliedDiscount.setDiscountAmount(discount.getDiscountAmount());
+                    return appliedDiscount;
+                })
+                .collect(Collectors.toList());
+        orderDetails.setAppliedDiscounts(appliedDiscountsList);
+
+        return orderDetails;
     }
 
     private OrdersForOrganizerDTO mapToOrdersForOrganizerDTO(Orders order) {
@@ -489,6 +552,7 @@ public class OrderServiceImpl implements OrderService {
         Users customer = userRepository.findById(order.getCustomerId())
                 .orElseThrow(() -> new ApplicationException("Customer not found"));
         OrdersForOrganizerDTO.CustomerDetailsDTO customerDetails = new OrdersForOrganizerDTO.CustomerDetailsDTO();
+        customerDetails.setId(customer.getId());
         customerDetails.setFirstName(customer.getFirstName());
         customerDetails.setLastName(customer.getLastName());
         customerDetails.setEmail(customer.getEmail());
