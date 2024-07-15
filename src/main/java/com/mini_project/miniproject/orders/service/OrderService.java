@@ -9,4 +9,6 @@ public interface OrderService {
     void confirmPayment(ConfirmPaymentRequestDTO confirmPaymentRequestDTO, Authentication authentication);
     OrderDetailsDTO getOrderDetails(Long orderId, Authentication authentication);
     PaginatedOrderDetailsDTO getPaginatedOrderDetails(Authentication authentication, int page, int size);
+
+    PaginatedOrdersForOrganizerDTO getOrdersForOrganizer(Authentication authentication, int page, int size);
 }

@@ -12,9 +12,10 @@ import com.mini_project.miniproject.orders.entity.OrderItems;
 import com.mini_project.miniproject.orders.entity.Orders;
 import com.mini_project.miniproject.orders.repository.OrderDiscountRepository;
 import com.mini_project.miniproject.orders.repository.OrderItemRepository;
-import com.mini_project.miniproject.orders.repository.OrderRespository;
+import com.mini_project.miniproject.orders.repository.OrderRepository;
 import com.mini_project.miniproject.orders.service.OrderService;
 import com.mini_project.miniproject.user.entity.Points;
+import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.repository.PointsRepository;
 import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
 import com.mini_project.miniproject.user.repository.UserRepository;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
-    private final OrderRespository orderRespository;
+    private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderDiscountRepository orderDiscountRepository;
     private final PointsRepository pointsRepository;
@@ -46,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final EventVouchersRepository eventVouchersRepository;
 
     public OrderServiceImpl(
-            OrderRespository orderRespository,
+            OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             OrderDiscountRepository orderDiscountRepository,
             PointsRepository pointsRepository,
@@ -55,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
             EventRepository eventRepository,
             TicketTiersRepository ticketTiersRepository,
             EventVouchersRepository eventVouchersRepository) {
-        this.orderRespository = orderRespository;
+        this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.orderDiscountRepository = orderDiscountRepository;
         this.pointsRepository = pointsRepository;
@@ -188,7 +189,7 @@ public class OrderServiceImpl implements OrderService {
         // finalize order
         order.setOriginalPrice(originalPrice);
         order.setTotalPrice(totalPrice);
-        order = orderRespository.save(order);
+        order = orderRepository.save(order);
 
         // create order response
         CreateOrderResponseDTO response = new CreateOrderResponseDTO();
@@ -221,7 +222,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ApplicationException("User not found."));
 
         // Check if the order exists
-        Orders order = orderRespository.findById(confirmPaymentRequestDTO.getOrderId())
+        Orders order = orderRepository.findById(confirmPaymentRequestDTO.getOrderId())
                 .orElseThrow(() -> new ApplicationException("Order not found."));
 
         // Validate if the order belongs to the user
@@ -300,7 +301,7 @@ public class OrderServiceImpl implements OrderService {
         order.setInvoice(invoiceNumber);
 
         // Save the updated order
-        orderRespository.save(order);
+        orderRepository.save(order);
     }
 
     private String generateInvoice(Long orderId) {
@@ -314,7 +315,7 @@ public class OrderServiceImpl implements OrderService {
         Long userId = jwt.getClaim("userId");
 
         // Get the order by its id and status
-        Orders order = orderRespository.findByIdAndStatus(orderId, true)
+        Orders order = orderRepository.findByIdAndStatus(orderId, true)
                 .orElseThrow(() -> new ApplicationException("Order not found"));
 
         // Check if the order belongs to the user
@@ -371,7 +372,7 @@ public class OrderServiceImpl implements OrderService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         // Fetch paginated orders for the user
-        Page<Orders> ordersPage = orderRespository.findByCustomerIdAndStatus(userId, true, pageable);
+        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
 
         // Map Orders to OrderDetailsDTO
         List<OrderDetailsDTO> orderDetailsList = ordersPage.getContent().stream()
@@ -428,6 +429,72 @@ public class OrderServiceImpl implements OrderService {
         orderDetails.setEventDetail(eventDetails);
 
         return orderDetails;
+    }
+
+    @Override
+    public PaginatedOrdersForOrganizerDTO getOrdersForOrganizer(Authentication authentication, int page, int size) {
+        // Get userId and userRole from authentication
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user is an organizer
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new ApplicationException("Only organizers can access this feature");
+        }
+
+        // Create Pageable object
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        // Get list of orders for events that this organizer created
+        Page<Orders> ordersPage = orderRepository.findOrdersByEventOrganizerId(userId, pageable);
+
+        // Map Orders to OrdersForOrganizerDTO
+        List<OrdersForOrganizerDTO> orderDTOs = ordersPage.getContent().stream()
+                .map(this::mapToOrdersForOrganizerDTO)
+                .collect(Collectors.toList());
+
+        // Create and populate PaginatedOrdersForOrganizerDTO
+        PaginatedOrdersForOrganizerDTO paginatedResponse = new PaginatedOrdersForOrganizerDTO();
+        paginatedResponse.setOrders(orderDTOs);
+        paginatedResponse.setPage(page);
+        paginatedResponse.setPerPage(size);
+        paginatedResponse.setTotalPages(ordersPage.getTotalPages());
+        paginatedResponse.setTotalOrders(ordersPage.getTotalElements());
+
+        return paginatedResponse;
+    }
+
+    private OrdersForOrganizerDTO mapToOrdersForOrganizerDTO(Orders order) {
+        OrdersForOrganizerDTO dto = new OrdersForOrganizerDTO();
+        dto.setOrderId(order.getId());
+        dto.setInvoice(order.getInvoice());
+
+        // Fetch event details
+        Events event = eventRepository.findById(order.getEventId())
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+        dto.setEventName(event.getName());
+
+        dto.setPaymentMethod(order.getPaymentMethod());
+
+        // Calculate total tickets
+        int totalTickets = order.getOrderItems().stream()
+                .mapToInt(OrderItems::getQuantity)
+                .sum();
+        dto.setTotalTickets(totalTickets);
+
+        dto.setTotalPrice(order.getTotalPrice());
+
+        // Fetch customer details
+        Users customer = userRepository.findById(order.getCustomerId())
+                .orElseThrow(() -> new ApplicationException("Customer not found"));
+        OrdersForOrganizerDTO.CustomerDetailsDTO customerDetails = new OrdersForOrganizerDTO.CustomerDetailsDTO();
+        customerDetails.setFirstName(customer.getFirstName());
+        customerDetails.setLastName(customer.getLastName());
+        customerDetails.setEmail(customer.getEmail());
+        dto.setCustomerDetails(customerDetails);
+
+        return dto;
     }
 
 

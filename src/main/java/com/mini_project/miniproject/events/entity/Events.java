@@ -29,8 +29,6 @@ public class Events {
     private Long id;
 
 //    @Column(name = "organizer_id", nullable = false)
-////    @ManyToOne(fetch = FetchType.LAZY)
-////    @JoinColumn(name = "organizer_id", nullable = false)
 //    private Long organizerId;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -2,7 +2,7 @@ package com.mini_project.miniproject.reviews.service.impl;
 
 import com.mini_project.miniproject.exceptions.ApplicationException;
 import com.mini_project.miniproject.orders.entity.Orders;
-import com.mini_project.miniproject.orders.repository.OrderRespository;
+import com.mini_project.miniproject.orders.repository.OrderRepository;
 import com.mini_project.miniproject.reviews.dto.*;
 import com.mini_project.miniproject.reviews.entity.Reviews;
 import com.mini_project.miniproject.reviews.repository.ReviewsRepository;
@@ -24,11 +24,11 @@ import java.util.stream.Collectors;
 @Service
 public class ReviewServiceImpl implements ReviewService {
     private final ReviewsRepository reviewsRepository;
-    private final OrderRespository orderRespository;
+    private final OrderRepository orderRepository;
     private final UserRepository userRepository;
-    public ReviewServiceImpl(ReviewsRepository reviewsRepository, OrderRespository orderRespository, UserRepository userRepository){
+    public ReviewServiceImpl(ReviewsRepository reviewsRepository, OrderRepository orderRepository, UserRepository userRepository){
         this.reviewsRepository = reviewsRepository;
-        this.orderRespository = orderRespository;
+        this.orderRepository = orderRepository;
         this.userRepository = userRepository;
 
     }
@@ -38,7 +38,7 @@ public class ReviewServiceImpl implements ReviewService {
         Long userId = getUserIdFromAuthentication(authentication);
 
         // check from the orderId if the eventId == event_id and userId == customer_id in the table orders
-        Orders order = orderRespository.findById(createReviewDTO.getOrderId()).orElseThrow(() -> new ApplicationException("Order not found."));
+        Orders order = orderRepository.findById(createReviewDTO.getOrderId()).orElseThrow(() -> new ApplicationException("Order not found."));
         if (order.getCustomerId() != userId || order.getEventId() != createReviewDTO.getEventId()){
             throw new ApplicationException("You cannot review this event.");
         }
