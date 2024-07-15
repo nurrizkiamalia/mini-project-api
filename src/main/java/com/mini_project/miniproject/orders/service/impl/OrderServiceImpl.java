@@ -12,7 +12,7 @@ import com.mini_project.miniproject.orders.entity.OrderItems;
 import com.mini_project.miniproject.orders.entity.Orders;
 import com.mini_project.miniproject.orders.repository.OrderDiscountRepository;
 import com.mini_project.miniproject.orders.repository.OrderItemRepository;
-import com.mini_project.miniproject.orders.repository.OrderRespository;
+import com.mini_project.miniproject.orders.repository.OrderRepository;
 import com.mini_project.miniproject.orders.service.OrderService;
 import com.mini_project.miniproject.user.entity.Points;
 import com.mini_project.miniproject.user.repository.PointsRepository;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
-    private final OrderRespository orderRespository;
+    private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderDiscountRepository orderDiscountRepository;
     private final PointsRepository pointsRepository;
@@ -46,7 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private final EventVouchersRepository eventVouchersRepository;
 
     public OrderServiceImpl(
-            OrderRespository orderRespository,
+            OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             OrderDiscountRepository orderDiscountRepository,
             PointsRepository pointsRepository,
@@ -55,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
             EventRepository eventRepository,
             TicketTiersRepository ticketTiersRepository,
             EventVouchersRepository eventVouchersRepository) {
-        this.orderRespository = orderRespository;
+        this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.orderDiscountRepository = orderDiscountRepository;
         this.pointsRepository = pointsRepository;
@@ -188,7 +188,7 @@ public class OrderServiceImpl implements OrderService {
         // finalize order
         order.setOriginalPrice(originalPrice);
         order.setTotalPrice(totalPrice);
-        order = orderRespository.save(order);
+        order = orderRepository.save(order);
 
         // create order response
         CreateOrderResponseDTO response = new CreateOrderResponseDTO();
@@ -221,7 +221,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ApplicationException("User not found."));
 
         // Check if the order exists
-        Orders order = orderRespository.findById(confirmPaymentRequestDTO.getOrderId())
+        Orders order = orderRepository.findById(confirmPaymentRequestDTO.getOrderId())
                 .orElseThrow(() -> new ApplicationException("Order not found."));
 
         // Validate if the order belongs to the user
@@ -300,7 +300,7 @@ public class OrderServiceImpl implements OrderService {
         order.setInvoice(invoiceNumber);
 
         // Save the updated order
-        orderRespository.save(order);
+        orderRepository.save(order);
     }
 
     private String generateInvoice(Long orderId) {
@@ -314,7 +314,7 @@ public class OrderServiceImpl implements OrderService {
         Long userId = jwt.getClaim("userId");
 
         // Get the order by its id and status
-        Orders order = orderRespository.findByIdAndStatus(orderId, true)
+        Orders order = orderRepository.findByIdAndStatus(orderId, true)
                 .orElseThrow(() -> new ApplicationException("Order not found"));
 
         // Check if the order belongs to the user
@@ -371,7 +371,7 @@ public class OrderServiceImpl implements OrderService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         // Fetch paginated orders for the user
-        Page<Orders> ordersPage = orderRespository.findByCustomerIdAndStatus(userId, true, pageable);
+        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
 
         // Map Orders to OrderDetailsDTO
         List<OrderDetailsDTO> orderDetailsList = ordersPage.getContent().stream()
