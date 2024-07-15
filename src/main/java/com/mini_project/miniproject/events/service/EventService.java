@@ -15,11 +15,7 @@ public interface EventService {
                                            String prices, String keyword, Long organizerId,
                                            int page, int size);
     UpdateEventResponseDto updateEvent(Long eventId, CreateEventRequestDto requestDto, Authentication authentication);
-
     void deleteEvent(Long eventId, Authentication authentication);
-
-    // get event list (current organizer only)
-//    PaginatedEventResponseForOrganizerDTO getEventsForOrganizer(Authentication authentication, int page, int size);
-
-    // get event by id (current organizer only)
+    String updateEventPicture(Long eventId, MultipartFile file, Authentication authentication) throws IOException;
+    PaginatedEventResponseForOrganizerDTO eventListForOrganizer(Authentication authentication, int page, int size);
 }

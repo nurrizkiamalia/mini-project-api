@@ -29,6 +29,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.persistence.criteria.Predicate;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -351,6 +352,90 @@ public class EventServiceImpl implements EventService {
         }
 
         eventRepository.delete(event);
+    }
+
+    @Override
+    @Transactional
+    public String updateEventPicture(Long eventId, MultipartFile file, Authentication authentication) throws IOException {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user has the ORGANIZER role
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new AccessDeniedException("Only users with ORGANIZER role can upload images for events");
+        }
+
+        Events event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ApplicationException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(userId)) {
+            throw new ApplicationException("You are not authorized to update the picture of this event");
+        }
+
+        String imageUrl = cloudinaryService.uploadImage(file);
+        event.setEventPicture(imageUrl);
+        eventRepository.save(event);
+
+        return imageUrl;
+    }
+
+    @Override
+    public PaginatedEventResponseForOrganizerDTO eventListForOrganizer(Authentication authentication, int page, int size) {
+        // Get userId and userRole from authentication
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user is an organizer
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new ApplicationException("Only organizers can access this feature");
+        }
+
+
+        // Get list of events created by the current organizer
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Events> eventsPage = eventRepository.findByOrganizerId(userId, pageable);
+
+        // Convert Events to EventResponseForOrganizerDTO
+        List<EventResponseForOrganizerDTO> eventDTOs = eventsPage.getContent().stream()
+                .map(this::convertToEventResponseForOrganizerDTO)
+                .collect(Collectors.toList());
+
+        // Create and populate PaginatedEventResponseForOrganizerDTO
+        PaginatedEventResponseForOrganizerDTO response = new PaginatedEventResponseForOrganizerDTO();
+        response.setEvents(eventDTOs);
+        response.setPage(page);
+        response.setPerPage(size);
+        response.setTotalPages(eventsPage.getTotalPages());
+        response.setTotalEvents(eventsPage.getTotalElements());
+
+        return response;
+    }
+
+    private EventResponseForOrganizerDTO convertToEventResponseForOrganizerDTO(Events event) {
+        EventResponseForOrganizerDTO dto = new EventResponseForOrganizerDTO();
+        dto.setId(event.getId().toString());
+        dto.setEventPicture(event.getEventPicture());
+        dto.setName(event.getName());
+        dto.setCategory(event.getCategory());
+
+        // Convert all ticket tiers to TicketsDTO
+        List<EventResponseForOrganizerDTO.TicketsDTO> ticketsDTOList = event.getTicketTiers().stream()
+                .map(this::convertToTicketsDTO)
+                .collect(Collectors.toList());
+        dto.setTickets(ticketsDTOList);
+
+        return dto;
+    }
+
+    private EventResponseForOrganizerDTO.TicketsDTO convertToTicketsDTO(TicketTiers ticketTier) {
+        EventResponseForOrganizerDTO.TicketsDTO ticketsDTO = new EventResponseForOrganizerDTO.TicketsDTO();
+        ticketsDTO.setId(ticketTier.getId());
+        ticketsDTO.setName(ticketTier.getName());
+        ticketsDTO.setPrice(ticketTier.getPrice());
+        ticketsDTO.setTotalSeats(ticketTier.getTotalSeats());
+        return ticketsDTO;
     }
 
 //    @Override

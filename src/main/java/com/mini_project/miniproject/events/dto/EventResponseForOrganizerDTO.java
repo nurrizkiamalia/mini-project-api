@@ -1,42 +1,24 @@
-//package com.mini_project.miniproject.events.dto;
-//
-//import lombok.Data;
-//
-//import java.math.BigDecimal;
-//import java.time.LocalDate;
-//import java.time.LocalTime;
-//import java.util.List;
-//
-//@Data
-//public class EventResponseForOrganizerDTO {
-//    private String id;
-//    private String name;
-//    private String description;
-//    private LocalDate date;
-//    private LocalTime time;
-//    private String location;
-//    private String city;
-//    private String eventType;
-//    private String category;
-//    private Integer referralQuota;
-//    private String eventPicture;
-//    private List<TicketTierDTO> ticketTiers;
-//    private List<EventVoucherDTO> eventVouchers;
-//
-//    @Data
-//    public static class TicketTierDTO {
-//        private Long id;
-//        private String name;
-//        private BigDecimal price;
-//        private Integer totalSeats;
-//    }
-//
-//    @Data
-//    public static class EventVoucherDTO {
-//        private Long id;
-//        private String code;
-//        private BigDecimal discountPercentage;
-//        private LocalDate startDate;
-//        private LocalDate endDate;
-//    }
-//}
+package com.mini_project.miniproject.events.dto;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Data
+public class EventResponseForOrganizerDTO {
+    private String id;
+    private String eventPicture;
+    private String name;
+    private String category;
+    private List<TicketsDTO> tickets;
+
+    @Data
+    public static class TicketsDTO{
+        private Long id;
+        private String name;
+        private BigDecimal price;
+        private Integer totalSeats;
+    }
+
+}

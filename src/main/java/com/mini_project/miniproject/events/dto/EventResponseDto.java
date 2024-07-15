@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.events.dto;
 
+//import com.mini_project.miniproject.reviews.dto.ReviewDetailsDTO;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ public class EventResponseDto {
     private OrganizerDTO organizer;
     private List<TicketTierDTO> ticketTiers;
     private List<EventVoucherDTO> eventVouchers;
+//    private ReviewDetailsDTO reviews;
 
     @Data
     public static class OrganizerDTO {
@@ -50,4 +52,5 @@ public class EventResponseDto {
         private LocalDate startDate;
         private LocalDate endDate;
     }
+
 }

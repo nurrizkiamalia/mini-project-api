@@ -1,11 +1,7 @@
 package com.mini_project.miniproject.events.controller;
 
 //import com.mini_project.miniproject.auth.annotation.IsOrganizer;
-import com.mini_project.miniproject.auth.annotation.IsOrganizer;
-import com.mini_project.miniproject.events.dto.CreateEventRequestDto;
-import com.mini_project.miniproject.events.dto.EventResponseDto;
-import com.mini_project.miniproject.events.dto.PaginatedEventResponseDto;
-import com.mini_project.miniproject.events.dto.UpdateEventResponseDto;
+import com.mini_project.miniproject.events.dto.*;
 import com.mini_project.miniproject.events.entity.Events;
 import com.mini_project.miniproject.events.service.EventService;
 import com.mini_project.miniproject.responses.Response;
@@ -37,13 +33,21 @@ public class EventController {
     }
 
     @PostMapping(value = "/{eventId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    @IsOrganizer
     public ResponseEntity<Response<Object>> uploadEventPicture(
             @PathVariable Long eventId,
             @RequestParam("file") MultipartFile file,
             Authentication authentication) throws IOException {
         String imageUrl = eventService.uploadEventPicture(eventId, file, authentication);
         return Response.success("Image successfully uploaded",imageUrl);
+    }
+
+    @PutMapping(value = "/{eventId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Response<Object>> updateEventPicture(
+            @PathVariable Long eventId,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) throws IOException {
+        String imageUrl = eventService.updateEventPicture(eventId, file, authentication);
+        return Response.success("Image successfully updated",imageUrl);
     }
 
     @GetMapping("/{eventId}")
@@ -80,5 +84,14 @@ public class EventController {
     public ResponseEntity<Response<Void>> deleteEvent(@PathVariable Long eventId, Authentication authentication) {
         eventService.deleteEvent(eventId, authentication);
         return Response.success("Event deleted successfully");
+    }
+
+    @GetMapping("/organizer")
+    public ResponseEntity<Response<Object>> getEventsForOrganizer(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size){
+        PaginatedEventResponseForOrganizerDTO response = eventService.eventListForOrganizer(authentication, page, size);
+        return Response.success("Successfully retrieved events for this organizer.", response);
     }
 }
