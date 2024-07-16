@@ -1,9 +1,7 @@
 package com.mini_project.miniproject.orders.repository;
 
-<<<<<<< HEAD
 import com.mini_project.miniproject.orders.dto.OrderDetailsForOrganizerDTO;
-=======
->>>>>>> feature-dashboard
+
 import com.mini_project.miniproject.orders.entity.Orders;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,10 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-<<<<<<< HEAD
-=======
 import java.util.List;
->>>>>>> feature-dashboard
+
 import java.util.Optional;
 
 @Repository
