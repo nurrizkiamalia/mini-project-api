@@ -10,4 +10,6 @@ import java.time.LocalDate;
 public interface ReferralDiscountRepository extends JpaRepository<ReferralDiscount, Long> {
     ReferralDiscount findByUserIdAndExpiryDateAfter(Long userId, LocalDate date);
     void deleteByUserId(Long userId);
+
+//    ReferralDiscount findByUserId(Long userId);
 }

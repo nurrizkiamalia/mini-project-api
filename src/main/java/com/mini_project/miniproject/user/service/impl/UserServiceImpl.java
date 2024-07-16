@@ -132,7 +132,16 @@ public class UserServiceImpl implements UserService {
         dto.setQuotes(user.getQuotes());
         dto.setRole(user.getRole().name());
         dto.setPoints(calculateTotalPoints(user.getId()));
+        dto.setReferralDiscount(getReferralDiscount(user.getId()));
         return dto;
+    }
+
+    private String getReferralDiscount(Long userId) {
+        var referralDiscount = referralDiscountRepository.findByUserIdAndExpiryDateAfter(userId, LocalDate.now());
+        if (referralDiscount == null){
+            return "this user does not have referral discount";
+        }
+        return referralDiscount.getName();
     }
 
     private void updateUserProfile(Users user, ProfileSettingsDto profileSettingsDto) throws IOException {
