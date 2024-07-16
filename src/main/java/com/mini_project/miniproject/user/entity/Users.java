@@ -60,7 +60,7 @@ public class Users {
     @Column(name = "avatar", length = 100)
     private String avatar;
 
-    @Size(max = 255)
+//    @Size(max = 255)
 //    @NotNull
 //    @Column(name = "quotes", nullable = false, length = 255)
     @Column(name = "quotes")

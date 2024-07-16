@@ -16,7 +16,7 @@ public class ProfileSettingsDto {
     private String lastName;
 
     @NotBlank(message = "Quotes are required")
-    @Size(max = 20, message = "Quotes must not exceed 255 characters")
+//    @Size(max = 20, message = "Quotes must not exceed 255 characters")
     private String quotes;
 
     private MultipartFile avatar;
