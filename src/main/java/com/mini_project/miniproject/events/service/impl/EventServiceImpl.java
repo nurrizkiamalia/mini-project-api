@@ -145,10 +145,14 @@ public class EventServiceImpl implements EventService {
     @Override
     public PaginatedEventResponseDto searchEvents(String category, String city, String dates, String prices, String keyword, Long organizerId, int page, int size) {
 //        Pageable pageable = PageRequest.of(page, size);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("date").ascending());
 
         Specification<Events> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            // Add a predicate to filter out past events
+            LocalDate today = LocalDate.now();
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("date"), today));
 
             if (category != null && !category.isEmpty()) {
                 predicates.add(criteriaBuilder.equal(
