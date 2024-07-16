@@ -11,7 +11,8 @@ public class EventResponseForOrganizerDTO {
     private String eventPicture;
     private String name;
     private String category;
-    private List<TicketsDTO> tickets;
+//    private List<TicketsDTO> tickets;
+    private List<TicketsDTO> ticketTiers;
 
     @Data
     public static class TicketsDTO{

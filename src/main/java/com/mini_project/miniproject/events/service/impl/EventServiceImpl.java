@@ -424,7 +424,7 @@ public class EventServiceImpl implements EventService {
         List<EventResponseForOrganizerDTO.TicketsDTO> ticketsDTOList = event.getTicketTiers().stream()
                 .map(this::convertToTicketsDTO)
                 .collect(Collectors.toList());
-        dto.setTickets(ticketsDTOList);
+        dto.setTicketTiers(ticketsDTOList);
 
         return dto;
     }
