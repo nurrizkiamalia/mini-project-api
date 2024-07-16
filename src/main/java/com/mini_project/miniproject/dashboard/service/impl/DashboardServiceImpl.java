@@ -15,13 +15,18 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.time.Month;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
@@ -34,7 +39,7 @@ public class DashboardServiceImpl implements DashboardService {
             EventRepository eventRepository,
             TicketTiersRepository ticketTiersRepository,
             OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository){
+            OrderItemRepository orderItemRepository) {
         this.eventRepository = eventRepository;
         this.ticketTiersRepository = ticketTiersRepository;
         this.orderRepository = orderRepository;
@@ -164,18 +169,50 @@ public class DashboardServiceImpl implements DashboardService {
         result.setYearlyRevenue(mapYearlyRevenue(yearlyData));
         result.setTotalYearlyRevenue(calculateTotalRevenue(yearlyData));
 
+//        // Fetch and set monthly revenue for current year
+//        int currentYear = Year.now().getValue();
+//        List<Object[]> monthlyData = orderRepository.getMonthlyRevenueForOrganizer(organizerId, currentYear);
+//        result.setMonthlyRevenue(mapMonthlyRevenue(monthlyData));
+//        result.setTotalMonthlyRevenue(calculateTotalRevenue(monthlyData));
+
         // Fetch and set monthly revenue for current year
         int currentYear = Year.now().getValue();
         List<Object[]> monthlyData = orderRepository.getMonthlyRevenueForOrganizer(organizerId, currentYear);
-        result.setMonthlyRevenue(mapMonthlyRevenue(monthlyData));
+        List<ComprehensiveRevenueDTO.MonthlyRevenueDTO> monthlyRevenue = mapMonthlyRevenue(monthlyData);
+        populateMonthlyRevenue(monthlyRevenue, monthlyData);
+        result.setMonthlyRevenue(monthlyRevenue);
         result.setTotalMonthlyRevenue(calculateTotalRevenue(monthlyData));
 
-        // Fetch and set today's hourly revenue
-//        List<Object[]> hourlyData = orderRepository.getTodayHourlyRevenueForOrganizer(organizerId);
-//        result.setTodayRevenue(mapHourlyRevenue(hourlyData));
-//        result.setTotalTodayRevenue(calculateTotalRevenue(hourlyData));
+
+        // Fetch and set daily revenue
+        List<Object[]> dailyData = orderRepository.getDailyRevenueForCurrentMonth(organizerId);
+        result.setDailyRevenue(mapDailyRevenue(dailyData));
+        result.setTotalDailyRevenue(calculateTotalRevenue(dailyData));
+
 
         return result;
+    }
+
+    private List<ComprehensiveRevenueDTO.DailyRevenueDTO> mapDailyRevenue(List<Object[]> data) {
+        LocalDate now = LocalDate.now();
+        LocalDate firstDayOfMonth = now.withDayOfMonth(1);
+        LocalDate lastDayOfMonth = now.withDayOfMonth(now.lengthOfMonth());
+
+        Map<LocalDate, BigDecimal> revenueByDate = data.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Date) row[0]).toLocalDate(),
+                        row -> (BigDecimal) row[1]
+                ));
+
+        return Stream.iterate(firstDayOfMonth, date -> date.plusDays(1))
+                .limit(ChronoUnit.DAYS.between(firstDayOfMonth, lastDayOfMonth) + 1)
+                .map(date -> {
+                    ComprehensiveRevenueDTO.DailyRevenueDTO dto = new ComprehensiveRevenueDTO.DailyRevenueDTO();
+                    dto.setDate(date);
+                    dto.setRevenue(revenueByDate.getOrDefault(date, BigDecimal.ZERO));
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     private List<ComprehensiveRevenueDTO.YearlyRevenueDTO> mapYearlyRevenue(List<Object[]> data) {
@@ -196,15 +233,6 @@ public class DashboardServiceImpl implements DashboardService {
         }).collect(Collectors.toList());
     }
 
-//    private List<ComprehensiveRevenueDTO.HourlyRevenueDTO> mapHourlyRevenue(List<Object[]> data) {
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:00");
-//        return IntStream.rangeClosed(0, 23).mapToObj(hour -> {
-//            ComprehensiveRevenueDTO.HourlyRevenueDTO dto = new ComprehensiveRevenueDTO.HourlyRevenueDTO();
-//            dto.setHour(formatter.format(java.time.LocalTime.of(hour, 0)));
-//            dto.setRevenue(BigDecimal.ZERO);
-//            return dto;
-//        }).collect(Collectors.toList());
-//    }
 
     private BigDecimal calculateTotalRevenue(List<Object[]> data) {
         return data.stream()
@@ -219,6 +247,25 @@ public class DashboardServiceImpl implements DashboardService {
             monthlyRevenue.get(monthNumber - 1).setRevenue(revenue);
         });
     }
+}
+
+    // Fetch and set today's hourly revenue
+//        List<Object[]> hourlyData = orderRepository.getTodayHourlyRevenueForOrganizer(organizerId);
+//        result.setTodayRevenue(mapHourlyRevenue(hourlyData));
+//        result.setTotalTodayRevenue(calculateTotalRevenue(hourlyData));
+//    -----------------------------------------------------------------------------------------
+
+    //    private List<ComprehensiveRevenueDTO.HourlyRevenueDTO> mapHourlyRevenue(List<Object[]> data) {
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:00");
+//        return IntStream.rangeClosed(0, 23).mapToObj(hour -> {
+//            ComprehensiveRevenueDTO.HourlyRevenueDTO dto = new ComprehensiveRevenueDTO.HourlyRevenueDTO();
+//            dto.setHour(formatter.format(java.time.LocalTime.of(hour, 0)));
+//            dto.setRevenue(BigDecimal.ZERO);
+//            return dto;
+//        }).collect(Collectors.toList());
+//    }
+
+//    -----------------------------------------------------------------------------------------
 
 //    private void populateHourlyRevenue(List<ComprehensiveRevenueDTO.HourlyRevenueDTO> hourlyRevenue, List<Object[]> data) {
 //        data.forEach(row -> {
@@ -227,6 +274,6 @@ public class DashboardServiceImpl implements DashboardService {
 //            hourlyRevenue.get(hour).setRevenue(revenue);
 //        });
 //    }
-}
+//}
 
 

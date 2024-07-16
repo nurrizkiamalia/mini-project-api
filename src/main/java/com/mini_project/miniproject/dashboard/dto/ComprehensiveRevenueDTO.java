@@ -11,29 +11,29 @@ public class ComprehensiveRevenueDTO {
     private List<YearlyRevenueDTO> yearlyRevenue;
     private List<MonthlyRevenueDTO> monthlyRevenue;
     private List<DailyRevenueDTO> dailyRevenue;
-//    private List<HourlyRevenueDTO> todayRevenue;
     private BigDecimal totalYearlyRevenue;
     private BigDecimal totalMonthlyRevenue;
-//    private BigDecimal totalTodayRevenue;
+    private BigDecimal totalDailyRevenue;
 
     @Data
-    public static class YearlyRevenueDTO{
+    public static class YearlyRevenueDTO {
         private int year;
         private BigDecimal revenue;
 
     }
 
     @Data
-    public static class MonthlyRevenueDTO{
+    public static class MonthlyRevenueDTO {
         private String month;
         private BigDecimal revenue;
     }
 
     @Data
-    public static class DailyRevenueDTO{
+    public static class DailyRevenueDTO {
         private LocalDate date;
         private BigDecimal revenue;
     }
+}
 
 //    @Data
 //    public static class HourlyRevenueDTO{
@@ -42,4 +42,4 @@ public class ComprehensiveRevenueDTO {
 //    }
 
 
-}
+//}

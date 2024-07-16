@@ -16,6 +16,7 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Orders, Long> {
     Optional<Orders> findByIdAndStatus(Long orderId, boolean status);
+
     Page<Orders> findByCustomerIdAndStatus(Long userId, boolean status, Pageable pageable);
 
     @Query("SELECT o FROM Orders o JOIN Events e ON o.eventId = e.id WHERE e.organizer.id = :organizerId AND o.status = true")
@@ -53,6 +54,17 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
             "ORDER BY month ASC")
     List<Object[]> getMonthlyRevenueForOrganizer(@Param("organizerId") Long organizerId, @Param("year") int year);
 
+    @Query("SELECT DATE(o.createdAt) as date, SUM(o.totalPrice) as revenue " +
+            "FROM Orders o " +
+            "JOIN Events e ON o.eventId = e.id " +
+            "WHERE e.organizer.id = :organizerId " +
+            "AND o.status = true " +
+            "AND YEAR(o.createdAt) = YEAR(CURRENT_DATE) " +
+            "AND MONTH(o.createdAt) = MONTH(CURRENT_DATE) " +
+            "GROUP BY DATE(o.createdAt) " +
+            "ORDER BY DATE(o.createdAt)")
+    List<Object[]> getDailyRevenueForCurrentMonth(@Param("organizerId") Long organizerId);
+}
 
 //    @Query("SELECT HOUR(o.createdAt) as hour, SUM(o.totalPrice) as revenue " +
 //            "FROM Orders o " +
@@ -61,4 +73,4 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
 //            "GROUP BY HOUR(o.createdAt) " +
 //            "ORDER BY hour ASC")
 //    List<Object[]> getTodayHourlyRevenueForOrganizer(@Param("organizerId") Long organizerId);
-}
+//}
