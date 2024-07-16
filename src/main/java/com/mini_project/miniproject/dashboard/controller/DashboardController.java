@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.dashboard.controller;
 
+import com.mini_project.miniproject.dashboard.dto.ComprehensiveRevenueDTO;
 import com.mini_project.miniproject.dashboard.dto.RevenueByEventDTO;
 import com.mini_project.miniproject.dashboard.dto.SalePerEventCategoryDTO;
 import com.mini_project.miniproject.dashboard.service.DashboardService;
@@ -29,5 +30,11 @@ public class DashboardController {
     public ResponseEntity<Response<Object>> getRevenueByEvent(Authentication authentication) {
         RevenueByEventDTO response = dashboardService.getRevenueByEvent(authentication);
         return Response.success("Revenue per event successfully retrieved.", response);
+    }
+
+    @GetMapping("/comprehensive-revenue")
+    public ResponseEntity<Response<Object>> getComprehensiveRevenue(Authentication authentication) {
+        ComprehensiveRevenueDTO response = dashboardService.getComprehensiveRevenue(authentication);
+        return Response.success("Comprehensive revenue successfully retrieved.", response);
     }
 }

@@ -1,7 +1,5 @@
 package com.mini_project.miniproject.orders.repository;
 
-import com.mini_project.miniproject.orders.dto.OrderDetailsForOrganizerDTO;
-
 import com.mini_project.miniproject.orders.entity.Orders;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import java.util.Optional;
@@ -37,4 +36,29 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
             "GROUP BY e.id, e.name " +
             "ORDER BY SUM(o.totalPrice) DESC")
     List<Object[]> getRevenueByEventForOrganizer(@Param("organizerId") Long organizerId);
+
+    @Query("SELECT YEAR(o.createdAt) as year, SUM(o.totalPrice) as revenue " +
+            "FROM Orders o " +
+            "JOIN Events e ON o.eventId = e.id " +
+            "WHERE e.organizer.id = :organizerId AND o.status = true " +
+            "GROUP BY YEAR(o.createdAt) " +
+            "ORDER BY year DESC")
+    List<Object[]> getYearlyRevenueForOrganizer(@Param("organizerId") Long organizerId);
+
+    @Query("SELECT MONTH(o.createdAt) as month, SUM(o.totalPrice) as revenue " +
+            "FROM Orders o " +
+            "JOIN Events e ON o.eventId = e.id " +
+            "WHERE e.organizer.id = :organizerId AND o.status = true AND YEAR(o.createdAt) = :year " +
+            "GROUP BY MONTH(o.createdAt) " +
+            "ORDER BY month ASC")
+    List<Object[]> getMonthlyRevenueForOrganizer(@Param("organizerId") Long organizerId, @Param("year") int year);
+
+
+//    @Query("SELECT HOUR(o.createdAt) as hour, SUM(o.totalPrice) as revenue " +
+//            "FROM Orders o " +
+//            "JOIN Events e ON o.eventId = e.id " +
+//            "WHERE e.organizer.id = :organizerId AND o.status = true AND DATE(o.createdAt) = CURRENT_DATE " +
+//            "GROUP BY HOUR(o.createdAt) " +
+//            "ORDER BY hour ASC")
+//    List<Object[]> getTodayHourlyRevenueForOrganizer(@Param("organizerId") Long organizerId);
 }

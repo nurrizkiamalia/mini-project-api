@@ -1,5 +1,6 @@
 package com.mini_project.miniproject.dashboard.service.impl;
 
+import com.mini_project.miniproject.dashboard.dto.ComprehensiveRevenueDTO;
 import com.mini_project.miniproject.dashboard.dto.RevenueByEventDTO;
 import com.mini_project.miniproject.dashboard.dto.SalePerEventCategoryDTO;
 import com.mini_project.miniproject.dashboard.service.DashboardService;
@@ -14,9 +15,13 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Month;
+import java.time.Year;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
@@ -139,6 +144,89 @@ public class DashboardServiceImpl implements DashboardService {
 
         return result;
     }
+
+    @Override
+    public ComprehensiveRevenueDTO getComprehensiveRevenue(Authentication authentication) {
+        // Validate user from JWT
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long organizerId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Only organizer can access this feature
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new ApplicationException("Only organizers can access this feature");
+        }
+
+        ComprehensiveRevenueDTO result = new ComprehensiveRevenueDTO();
+
+        // Fetch and set yearly revenue
+        List<Object[]> yearlyData = orderRepository.getYearlyRevenueForOrganizer(organizerId);
+        result.setYearlyRevenue(mapYearlyRevenue(yearlyData));
+        result.setTotalYearlyRevenue(calculateTotalRevenue(yearlyData));
+
+        // Fetch and set monthly revenue for current year
+        int currentYear = Year.now().getValue();
+        List<Object[]> monthlyData = orderRepository.getMonthlyRevenueForOrganizer(organizerId, currentYear);
+        result.setMonthlyRevenue(mapMonthlyRevenue(monthlyData));
+        result.setTotalMonthlyRevenue(calculateTotalRevenue(monthlyData));
+
+        // Fetch and set today's hourly revenue
+//        List<Object[]> hourlyData = orderRepository.getTodayHourlyRevenueForOrganizer(organizerId);
+//        result.setTodayRevenue(mapHourlyRevenue(hourlyData));
+//        result.setTotalTodayRevenue(calculateTotalRevenue(hourlyData));
+
+        return result;
+    }
+
+    private List<ComprehensiveRevenueDTO.YearlyRevenueDTO> mapYearlyRevenue(List<Object[]> data) {
+        return data.stream().map(row -> {
+            ComprehensiveRevenueDTO.YearlyRevenueDTO dto = new ComprehensiveRevenueDTO.YearlyRevenueDTO();
+            dto.setYear((Integer) row[0]);
+            dto.setRevenue((BigDecimal) row[1]);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    private List<ComprehensiveRevenueDTO.MonthlyRevenueDTO> mapMonthlyRevenue(List<Object[]> data) {
+        return IntStream.rangeClosed(1, 12).mapToObj(monthNumber -> {
+            ComprehensiveRevenueDTO.MonthlyRevenueDTO dto = new ComprehensiveRevenueDTO.MonthlyRevenueDTO();
+            dto.setMonth(Month.of(monthNumber).name());
+            dto.setRevenue(BigDecimal.ZERO);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+//    private List<ComprehensiveRevenueDTO.HourlyRevenueDTO> mapHourlyRevenue(List<Object[]> data) {
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:00");
+//        return IntStream.rangeClosed(0, 23).mapToObj(hour -> {
+//            ComprehensiveRevenueDTO.HourlyRevenueDTO dto = new ComprehensiveRevenueDTO.HourlyRevenueDTO();
+//            dto.setHour(formatter.format(java.time.LocalTime.of(hour, 0)));
+//            dto.setRevenue(BigDecimal.ZERO);
+//            return dto;
+//        }).collect(Collectors.toList());
+//    }
+
+    private BigDecimal calculateTotalRevenue(List<Object[]> data) {
+        return data.stream()
+                .map(row -> (BigDecimal) row[1])
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void populateMonthlyRevenue(List<ComprehensiveRevenueDTO.MonthlyRevenueDTO> monthlyRevenue, List<Object[]> data) {
+        data.forEach(row -> {
+            int monthNumber = (Integer) row[0];
+            BigDecimal revenue = (BigDecimal) row[1];
+            monthlyRevenue.get(monthNumber - 1).setRevenue(revenue);
+        });
+    }
+
+//    private void populateHourlyRevenue(List<ComprehensiveRevenueDTO.HourlyRevenueDTO> hourlyRevenue, List<Object[]> data) {
+//        data.forEach(row -> {
+//            int hour = (Integer) row[0];
+//            BigDecimal revenue = (BigDecimal) row[1];
+//            hourlyRevenue.get(hour).setRevenue(revenue);
+//        });
+//    }
 }
 
 

@@ -144,7 +144,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PaginatedEventResponseDto searchEvents(String category, String city, String dates, String prices, String keyword, Long organizerId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+//        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         Specification<Events> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
