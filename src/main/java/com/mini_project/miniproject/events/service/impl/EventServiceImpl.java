@@ -443,27 +443,6 @@ public class EventServiceImpl implements EventService {
         return ticketsDTO;
     }
 
-//    @Override
-//    public PaginatedEventResponseForOrganizerDTO getEventsForOrganizer(Authentication authentication, int page, int size) {
-//        // Get userId and userRole from authentication
-//        Jwt jwt = (Jwt) authentication.getPrincipal();
-//        Long userId = jwt.getClaim("userId");
-//        String userRole = jwt.getClaim("role");
-//
-//        // Check if the user is an organizer
-//        if (!"ORGANIZER".equals(userRole)) {
-//            throw new ApplicationException("Only organizers can access this feature");
-//        }
-//
-//        // get list of events created by the current organizer
-//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-//
-//        Page<Events> eventsPage = eventRepository.findByOrganizerId(userId, pageable);
-//
-//
-//        return null;
-//    }
-
     private EventResponseDto convertToDto(Events event) {
         EventResponseDto dto = new EventResponseDto();
         dto.setId(event.getId().toString());
