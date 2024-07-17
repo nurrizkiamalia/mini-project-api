@@ -29,12 +29,14 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<Response<Object>> register(@Valid @RequestBody RegisterRequestDto registerRequestDto) {
-        try {
-            Users registeredUser = userService.register(registerRequestDto);
-            return Response.success("User registered successfully", registeredUser);
-        } catch (ApplicationException e) {
-            return Response.failed(e.getHttpStatus().value(), e.getMessage());
-        }
+//        try {
+//            Users registeredUser = userService.register(registerRequestDto);
+//            return Response.success("User registered successfully", registeredUser);
+//        } catch (ApplicationException e) {
+//            return Response.failed(e.getHttpStatus().value(), e.getMessage());
+//        }
+        Users registeredUser = userService.register(registerRequestDto);
+        return Response.success("User registered successfully", registeredUser);
     }
 
     @GetMapping("/profile")

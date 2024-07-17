@@ -531,6 +531,24 @@ public class OrderServiceImpl implements OrderService {
         return orderDetails;
     }
 
+    @Override
+    public void cancelOrder(Long orderId, Authentication authentication) {
+        // Get userId from JWT token
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+
+        // Get the order by its id and status
+        Orders order = orderRepository.findByIdAndStatus(orderId, false)
+                .orElseThrow(() -> new ApplicationException("Order not found"));
+
+        // Check if the order belongs to the user
+        if (!order.getCustomerId().equals(userId)) {
+            throw new ApplicationException("You cannot cancel this order");
+        }
+
+        orderRepository.deleteById(order.getId());
+    }
+
     private OrdersForOrganizerDTO mapToOrdersForOrganizerDTO(Orders order) {
         OrdersForOrganizerDTO dto = new OrdersForOrganizerDTO();
         dto.setOrderId(order.getId());

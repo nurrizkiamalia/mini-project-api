@@ -108,9 +108,6 @@ public class UserServiceImpl implements UserService {
     }
 
 
-
-
-
 // helpers
 
     private Users getUserFromAuthentication(Authentication authentication) {

@@ -10,6 +10,6 @@ public interface OrderService {
     OrderDetailsDTO getOrderDetails(Long orderId, Authentication authentication);
     PaginatedOrderDetailsDTO getPaginatedOrderDetails(Authentication authentication, int page, int size);
     PaginatedOrdersForOrganizerDTO getOrdersForOrganizer(Authentication authentication, int page, int size);
-
     OrderDetailsForOrganizerDTO getOrderDetailsForOrganizer(Long orderId, Authentication authentication);
+    void cancelOrder(Long orderId, Authentication authentication);
 }

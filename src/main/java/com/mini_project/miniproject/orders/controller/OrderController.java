@@ -34,6 +34,12 @@ public class OrderController {
         return Response.success("Order successfully retrieved.", orderDetailsDTO);
     }
 
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity<Response<Void>> cancelOrder(@PathVariable Long orderId, Authentication authentication){
+        orderService.cancelOrder(orderId, authentication);
+        return Response.success("Successfully cancel order", null);
+    }
+
     @GetMapping
     public ResponseEntity<Response<Object>> getPaginatedOrderDetails(
             Authentication authentication,
@@ -57,4 +63,5 @@ public class OrderController {
         OrderDetailsForOrganizerDTO response = orderService.getOrderDetailsForOrganizer(orderId, authentication);
         return Response.success("Order details succesfully retrieved for this organizer.", response);
     }
+
 }
