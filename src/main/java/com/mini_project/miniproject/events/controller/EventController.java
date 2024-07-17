@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/events")
@@ -86,12 +87,18 @@ public class EventController {
         return Response.success("Event deleted successfully");
     }
 
+//    @GetMapping("/organizer")
+//    public ResponseEntity<Response<Object>> getEventsForOrganizer(
+//            Authentication authentication,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "9") int size){
+//        PaginatedEventResponseForOrganizerDTO response = eventService.eventListForOrganizer(authentication, page, size);
+//        return Response.success("Successfully retrieved events for this organizer.", response);
+//    }
+
     @GetMapping("/organizer")
-    public ResponseEntity<Response<Object>> getEventsForOrganizer(
-            Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size){
-        PaginatedEventResponseForOrganizerDTO response = eventService.eventListForOrganizer(authentication, page, size);
+    public ResponseEntity<Response<Object>> getEventsForOrganizer(Authentication authentication){
+        List<EventResponseForOrganizerDTO> response = eventService.eventListForOrganizer(authentication);
         return Response.success("Successfully retrieved events for this organizer.", response);
     }
 }

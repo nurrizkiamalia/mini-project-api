@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface EventService {
     Events createEvent(CreateEventRequestDto requestDto, Authentication authentication);
@@ -17,5 +18,7 @@ public interface EventService {
     UpdateEventResponseDto updateEvent(Long eventId, CreateEventRequestDto requestDto, Authentication authentication);
     void deleteEvent(Long eventId, Authentication authentication);
     String updateEventPicture(Long eventId, MultipartFile file, Authentication authentication) throws IOException;
-    PaginatedEventResponseForOrganizerDTO eventListForOrganizer(Authentication authentication, int page, int size);
+//    PaginatedEventResponseForOrganizerDTO eventListForOrganizer(Authentication authentication, int page, int size);
+
+    List<EventResponseForOrganizerDTO> eventListForOrganizer(Authentication authentication);
 }

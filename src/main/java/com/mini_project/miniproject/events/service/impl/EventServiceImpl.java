@@ -385,8 +385,41 @@ public class EventServiceImpl implements EventService {
         return imageUrl;
     }
 
+//    @Override
+//    public PaginatedEventResponseForOrganizerDTO eventListForOrganizer(Authentication authentication, int page, int size) {
+//        // Get userId and userRole from authentication
+//        Jwt jwt = (Jwt) authentication.getPrincipal();
+//        Long userId = jwt.getClaim("userId");
+//        String userRole = jwt.getClaim("role");
+//
+//        // Check if the user is an organizer
+//        if (!"ORGANIZER".equals(userRole)) {
+//            throw new ApplicationException("Only organizers can access this feature");
+//        }
+//
+//
+//        // Get list of events created by the current organizer
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//        Page<Events> eventsPage = eventRepository.findByOrganizerId(userId, pageable);
+//
+//        // Convert Events to EventResponseForOrganizerDTO
+//        List<EventResponseForOrganizerDTO> eventDTOs = eventsPage.getContent().stream()
+//                .map(this::convertToEventResponseForOrganizerDTO)
+//                .collect(Collectors.toList());
+//
+//        // Create and populate PaginatedEventResponseForOrganizerDTO
+//        PaginatedEventResponseForOrganizerDTO response = new PaginatedEventResponseForOrganizerDTO();
+//        response.setEvents(eventDTOs);
+//        response.setPage(page);
+//        response.setPerPage(size);
+//        response.setTotalPages(eventsPage.getTotalPages());
+//        response.setTotalEvents(eventsPage.getTotalElements());
+//
+//        return response;
+//    }
+
     @Override
-    public PaginatedEventResponseForOrganizerDTO eventListForOrganizer(Authentication authentication, int page, int size) {
+    public List<EventResponseForOrganizerDTO> eventListForOrganizer(Authentication authentication){
         // Get userId and userRole from authentication
         Jwt jwt = (Jwt) authentication.getPrincipal();
         Long userId = jwt.getClaim("userId");
@@ -397,25 +430,16 @@ public class EventServiceImpl implements EventService {
             throw new ApplicationException("Only organizers can access this feature");
         }
 
-
         // Get list of events created by the current organizer
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Events> eventsPage = eventRepository.findByOrganizerId(userId, pageable);
+        List<Events> eventsList = eventRepository.findByOrganizerId(userId);
 
         // Convert Events to EventResponseForOrganizerDTO
-        List<EventResponseForOrganizerDTO> eventDTOs = eventsPage.getContent().stream()
+        List<EventResponseForOrganizerDTO> eventDTOs = eventsList.stream()
                 .map(this::convertToEventResponseForOrganizerDTO)
                 .collect(Collectors.toList());
 
-        // Create and populate PaginatedEventResponseForOrganizerDTO
-        PaginatedEventResponseForOrganizerDTO response = new PaginatedEventResponseForOrganizerDTO();
-        response.setEvents(eventDTOs);
-        response.setPage(page);
-        response.setPerPage(size);
-        response.setTotalPages(eventsPage.getTotalPages());
-        response.setTotalEvents(eventsPage.getTotalElements());
+        return eventDTOs;
 
-        return response;
     }
 
     private EventResponseForOrganizerDTO convertToEventResponseForOrganizerDTO(Events event) {
