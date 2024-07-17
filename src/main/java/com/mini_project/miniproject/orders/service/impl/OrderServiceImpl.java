@@ -19,10 +19,10 @@ import com.mini_project.miniproject.user.entity.Users;
 import com.mini_project.miniproject.user.repository.PointsRepository;
 import com.mini_project.miniproject.user.repository.ReferralDiscountRepository;
 import com.mini_project.miniproject.user.repository.UserRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+//import org.springframework.data.domain.Page;
+//import org.springframework.data.domain.PageRequest;
+//import org.springframework.data.domain.Pageable;
+//import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -436,40 +436,40 @@ public class OrderServiceImpl implements OrderService {
         return orderDetails;
     }
 
-    @Override
-    public PaginatedOrdersForOrganizerDTO getOrdersForOrganizer(Authentication authentication, int page, int size) {
-        // Get userId and userRole from authentication
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        Long userId = jwt.getClaim("userId");
-        String userRole = jwt.getClaim("role");
-
-        // Check if the user is an organizer
-        if (!"ORGANIZER".equals(userRole)) {
-            throw new ApplicationException("Only organizers can access this feature");
-        }
-
-        // Create Pageable object
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-        // Get list of orders for events that this organizer created
-//        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
-        Page<Orders> ordersPage = orderRepository.findPaidOrdersByEventOrganizerId(userId, pageable);
-
-        // Map Orders to OrdersForOrganizerDTO
-        List<OrdersForOrganizerDTO> orderDTOs = ordersPage.getContent().stream()
-                .map(this::mapToOrdersForOrganizerDTO)
-                .collect(Collectors.toList());
-
-        // Create and populate PaginatedOrdersForOrganizerDTO
-        PaginatedOrdersForOrganizerDTO paginatedResponse = new PaginatedOrdersForOrganizerDTO();
-        paginatedResponse.setOrders(orderDTOs);
-        paginatedResponse.setPage(page);
-        paginatedResponse.setPerPage(size);
-        paginatedResponse.setTotalPages(ordersPage.getTotalPages());
-        paginatedResponse.setTotalOrders(ordersPage.getTotalElements());
-
-        return paginatedResponse;
-    }
+//    @Override
+//    public PaginatedOrdersForOrganizerDTO getOrdersForOrganizer(Authentication authentication, int page, int size) {
+//        // Get userId and userRole from authentication
+//        Jwt jwt = (Jwt) authentication.getPrincipal();
+//        Long userId = jwt.getClaim("userId");
+//        String userRole = jwt.getClaim("role");
+//
+//        // Check if the user is an organizer
+//        if (!"ORGANIZER".equals(userRole)) {
+//            throw new ApplicationException("Only organizers can access this feature");
+//        }
+//
+//        // Create Pageable object
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//
+//        // Get list of orders for events that this organizer created
+////        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
+//        Page<Orders> ordersPage = orderRepository.findPaidOrdersByEventOrganizerId(userId, pageable);
+//
+//        // Map Orders to OrdersForOrganizerDTO
+//        List<OrdersForOrganizerDTO> orderDTOs = ordersPage.getContent().stream()
+//                .map(this::mapToOrdersForOrganizerDTO)
+//                .collect(Collectors.toList());
+//
+//        // Create and populate PaginatedOrdersForOrganizerDTO
+//        PaginatedOrdersForOrganizerDTO paginatedResponse = new PaginatedOrdersForOrganizerDTO();
+//        paginatedResponse.setOrders(orderDTOs);
+//        paginatedResponse.setPage(page);
+//        paginatedResponse.setPerPage(size);
+//        paginatedResponse.setTotalPages(ordersPage.getTotalPages());
+//        paginatedResponse.setTotalOrders(ordersPage.getTotalElements());
+//
+//        return paginatedResponse;
+//    }
 
     @Override
     public OrderDetailsForOrganizerDTO getOrderDetailsForOrganizer(Long orderId, Authentication authentication) {
@@ -568,6 +568,40 @@ public class OrderServiceImpl implements OrderService {
                 .map(this::mapOrderToOrderDetailsDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public OrderListOrganizerDTO getAllOrdersForOrganizer(Authentication authentication){
+        // Get userId and userRole from authentication
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+        String userRole = jwt.getClaim("role");
+
+        // Check if the user is an organizer
+        if (!"ORGANIZER".equals(userRole)) {
+            throw new ApplicationException("Only organizers can access this feature");
+        }
+
+        // Get all paid orders for events created by this organizer
+        List<Orders> organizerOrders = orderRepository.findPaidOrdersByEventOrganizerId(userId);
+
+        // Map Orders to OrdersForOrganizerDTO
+        List<OrdersForOrganizerDTO> orderDTOs = organizerOrders.stream()
+                .map(this::mapToOrdersForOrganizerDTO)
+                .collect(Collectors.toList());
+
+        // Calculate total amount
+        BigDecimal totalAmount = orderDTOs.stream()
+                .map(OrdersForOrganizerDTO::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Create and populate OrderListOrganizerDTO
+        OrderListOrganizerDTO response = new OrderListOrganizerDTO();
+        response.setTotalAmount(totalAmount);
+        response.setOrders(orderDTOs);
+
+        return response;
+    }
+
 
     private OrdersForOrganizerDTO mapToOrdersForOrganizerDTO(Orders order) {
         OrdersForOrganizerDTO dto = new OrdersForOrganizerDTO();

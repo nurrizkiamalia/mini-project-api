@@ -57,12 +57,18 @@ public class OrderController {
         return Response.success("Orders successfully retrieved", response);
     }
 
+//    @GetMapping("/organizer")
+//    public ResponseEntity<Response<Object>> getOrdersForOrganizer(
+//            Authentication authentication,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "9") int size){
+//        PaginatedOrdersForOrganizerDTO response = orderService.getOrdersForOrganizer(authentication, page, size);
+//        return Response.success("Successfully retrieved orders for this organizer.", response);
+//    }
+
     @GetMapping("/organizer")
-    public ResponseEntity<Response<Object>> getOrdersForOrganizer(
-            Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size){
-        PaginatedOrdersForOrganizerDTO response = orderService.getOrdersForOrganizer(authentication, page, size);
+    public ResponseEntity<Response<Object>> getOrdersForOrganizer(Authentication authentication){
+        OrderListOrganizerDTO response = orderService.getAllOrdersForOrganizer(authentication);
         return Response.success("Successfully retrieved orders for this organizer.", response);
     }
 

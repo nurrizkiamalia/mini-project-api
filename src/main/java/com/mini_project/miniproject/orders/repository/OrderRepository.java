@@ -21,8 +21,12 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
     List<Orders> findByCustomerIdAndStatus(Long userId, boolean status);
 
 
+//    @Query("SELECT o FROM Orders o JOIN Events e ON o.eventId = e.id WHERE e.organizer.id = :organizerId AND o.status = true")
+//    Page<Orders> findPaidOrdersByEventOrganizerId(@Param("organizerId") Long organizerId, Pageable pageable);
+
     @Query("SELECT o FROM Orders o JOIN Events e ON o.eventId = e.id WHERE e.organizer.id = :organizerId AND o.status = true")
-    Page<Orders> findPaidOrdersByEventOrganizerId(@Param("organizerId") Long organizerId, Pageable pageable);
+    List<Orders> findPaidOrdersByEventOrganizerId(@Param("organizerId") Long organizerId);
+
 
     @Query("SELECT e.category, SUM(oi.quantity), SUM(o.totalPrice) " +
             "FROM Orders o " +
