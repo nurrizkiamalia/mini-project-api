@@ -17,7 +17,9 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Orders, Long> {
     Optional<Orders> findByIdAndStatus(Long orderId, boolean status);
 
-    Page<Orders> findByCustomerIdAndStatus(Long userId, boolean status, Pageable pageable);
+//    Page<Orders> findByCustomerIdAndStatus(Long userId, boolean status, Pageable pageable);
+    List<Orders> findByCustomerIdAndStatus(Long userId, boolean status);
+
 
     @Query("SELECT o FROM Orders o JOIN Events e ON o.eventId = e.id WHERE e.organizer.id = :organizerId AND o.status = true")
     Page<Orders> findPaidOrdersByEventOrganizerId(@Param("organizerId") Long organizerId, Pageable pageable);

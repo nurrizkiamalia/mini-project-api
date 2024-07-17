@@ -366,38 +366,38 @@ public class OrderServiceImpl implements OrderService {
         return orderDetails;
     }
 
-    @Override
-    public PaginatedOrderDetailsDTO getPaginatedOrderDetails(Authentication authentication, int page, int size) {
-        // Get userId from JWT token
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        Long userId = jwt.getClaim("userId");
-
-        // Create Pageable object
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-        // Fetch paginated orders for the user
-        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
-
-        // Map Orders to OrderDetailsDTO
-        List<OrderDetailsDTO> orderDetailsList = ordersPage.getContent().stream()
-                .map(this::mapOrderToOrderDetailsDTO)
-                .collect(Collectors.toList());
-
-        // Create and populate PaginatedOrderDetailsDTO
-        PaginatedOrderDetailsDTO paginatedDetails = new PaginatedOrderDetailsDTO();
-        paginatedDetails.setOrders(orderDetailsList);
-        paginatedDetails.setPage(page);
-        paginatedDetails.setPerPage(size);
-        paginatedDetails.setTotalPages(ordersPage.getTotalPages());
-        paginatedDetails.setTotalOrders(ordersPage.getTotalElements());
-
-        return paginatedDetails;
-    }
+//    @Override
+//    public PaginatedOrderDetailsDTO getPaginatedOrderDetails(Authentication authentication, int page, int size) {
+//        // Get userId from JWT token
+//        Jwt jwt = (Jwt) authentication.getPrincipal();
+//        Long userId = jwt.getClaim("userId");
+//
+//        // Create Pageable object
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//
+//        // Fetch paginated orders for the user
+//        Page<Orders> ordersPage = orderRepository.findByCustomerIdAndStatus(userId, true, pageable);
+//
+//        // Map Orders to OrderDetailsDTO
+//        List<OrderDetailsDTO> orderDetailsList = ordersPage.getContent().stream()
+//                .map(this::mapOrderToOrderDetailsDTO)
+//                .collect(Collectors.toList());
+//
+//        // Create and populate PaginatedOrderDetailsDTO
+//        PaginatedOrderDetailsDTO paginatedDetails = new PaginatedOrderDetailsDTO();
+//        paginatedDetails.setOrders(orderDetailsList);
+//        paginatedDetails.setPage(page);
+//        paginatedDetails.setPerPage(size);
+//        paginatedDetails.setTotalPages(ordersPage.getTotalPages());
+//        paginatedDetails.setTotalOrders(ordersPage.getTotalElements());
+//
+//        return paginatedDetails;
+//    }
 
     private OrderDetailsDTO mapOrderToOrderDetailsDTO(Orders order) {
         OrderDetailsDTO orderDetails = new OrderDetailsDTO();
         orderDetails.setId(order.getId());
-        orderDetails.setInvoice(orderDetails.getInvoice());
+        orderDetails.setInvoice(order.getInvoice());
         orderDetails.setTotalPrice(order.getTotalPrice());
 
         // Get the order items
@@ -551,6 +551,24 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.deleteById(order.getId());
     }
 
+    @Override
+    public List<OrderDetailsDTO> getAllOrders(Authentication authentication) {
+        // Get userId from JWT token
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+
+        // Validate user exists
+        userRepository.findById(userId).orElseThrow(() -> new ApplicationException("User not found."));
+
+        // Fetch all orders for the user
+        List<Orders> userOrders = orderRepository.findByCustomerIdAndStatus(userId, true);
+
+        // Map Orders to OrderDetailsDTO
+        return userOrders.stream()
+                .map(this::mapOrderToOrderDetailsDTO)
+                .collect(Collectors.toList());
+    }
+
     private OrdersForOrganizerDTO mapToOrdersForOrganizerDTO(Orders order) {
         OrdersForOrganizerDTO dto = new OrdersForOrganizerDTO();
         dto.setOrderId(order.getId());
@@ -588,8 +606,3 @@ public class OrderServiceImpl implements OrderService {
 }
 
 
-
-// Set the order's payment method (if inputted)  // edit this part, so the
-//        if (confirmPaymentRequestDTO.getPaymentMethod() != null && !confirmPaymentRequestDTO.getPaymentMethod().isEmpty()) {
-//            order.setPaymentMethod(confirmPaymentRequestDTO.getPaymentMethod());
-//        }

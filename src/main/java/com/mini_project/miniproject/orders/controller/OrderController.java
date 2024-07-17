@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/v1/orders")
 public class OrderController {
@@ -40,13 +42,19 @@ public class OrderController {
         return Response.success("Successfully cancel order", null);
     }
 
+//    @GetMapping
+//    public ResponseEntity<Response<Object>> getPaginatedOrderDetails(
+//            Authentication authentication,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "9") int size){
+//        PaginatedOrderDetailsDTO paginatedOrderDetailsDTO = orderService.getPaginatedOrderDetails(authentication, page, size);
+//        return Response.success("Orders successfully retrieved", paginatedOrderDetailsDTO);
+//    }
+
     @GetMapping
-    public ResponseEntity<Response<Object>> getPaginatedOrderDetails(
-            Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size){
-        PaginatedOrderDetailsDTO paginatedOrderDetailsDTO = orderService.getPaginatedOrderDetails(authentication, page, size);
-        return Response.success("Orders successfully retrieved", paginatedOrderDetailsDTO);
+    public ResponseEntity<Response<Object>> getAllOrders(Authentication authentication){
+        List<OrderDetailsDTO> response = orderService.getAllOrders(authentication);
+        return Response.success("Orders successfully retrieved", response);
     }
 
     @GetMapping("/organizer")
