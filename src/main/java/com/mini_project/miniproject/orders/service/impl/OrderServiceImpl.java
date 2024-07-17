@@ -157,7 +157,10 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // get the points & check if the buyer has it and the amount is sufficient
-        int requestedPoints = createOrderRequestDTO.getPoints() != null ? createOrderRequestDTO.getPoints() : 0;
+//        int requestedPoints = createOrderRequestDTO.getPoints() != null ? createOrderRequestDTO.getPoints() : 0;
+        // just in case users input negative point value
+        int requestedPoints = (createOrderRequestDTO.getPoints() == null || createOrderRequestDTO.getPoints() < 0) ? 0 : createOrderRequestDTO.getPoints();
+
         if (requestedPoints > 0) {
             List<Points> userPoints = pointsRepository.findByUserIdAndExpiryDateAfterOrderByExpiryDateAsc(userId, LocalDate.now());
             int availablePoints = userPoints.stream().mapToInt(Points::getAmount).sum();
@@ -180,10 +183,10 @@ public class OrderServiceImpl implements OrderService {
 
                 // Ensure totalPrice doesn't go below zero
                 totalPrice = totalPrice.max(BigDecimal.ZERO);
+
+            } else {
+                throw new ApplicationException("Insufficient points. Available points: " + availablePoints);
             }
-//            } else {
-//                throw new ApplicationException("Insufficient points. Available points: " + availablePoints);
-//            }
         }
 
         // finalize order
