@@ -360,6 +360,7 @@ public class OrderServiceImpl implements OrderService {
         eventDetails.setTime(event.getTime());
         eventDetails.setLocation(event.getLocation());
         eventDetails.setCity(event.getCity());
+        eventDetails.setEventPicture(event.getEventPicture());
         orderDetails.setEventDetail(eventDetails);
 
         return orderDetails;
@@ -429,6 +430,7 @@ public class OrderServiceImpl implements OrderService {
         eventDetails.setTime(event.getTime());
         eventDetails.setLocation(event.getLocation());
         eventDetails.setCity(event.getCity());
+        eventDetails.setEventPicture(event.getEventPicture());
         orderDetails.setEventDetail(eventDetails);
 
         return orderDetails;

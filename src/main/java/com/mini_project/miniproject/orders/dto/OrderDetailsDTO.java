@@ -31,6 +31,7 @@ public class OrderDetailsDTO {
         private LocalTime time;
         private String location;
         private String city;
+        private String eventPicture;
     }
 
 }
